@@ -1,0 +1,23 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDEs
+.idea/
+*.swp
+*.swo
+*.swn
+
+# Custom directories to ignore
+/archive/
+/credentials/
+/data/
+/documentation/
