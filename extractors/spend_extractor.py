@@ -26,12 +26,13 @@ Note:
 - It's part of a larger data processing system for managing and analysing Spend data.
 """
 
-# Import Python system libraries
-import sys  # For Python interpreter control
-
-# Configuration
-sys.dont_write_bytecode = True  # Prevent Python from writing bytecode files (.pyc)
-sys.path.append('/Users/hadid/Projects/ETL')  # Add path to system path
+# =============================================================================
+# # Import Python system libraries
+# import sys  # For Python interpreter control
+# # Configuration
+# sys.dont_write_bytecode = True  # Prevent Python from writing bytecode files (.pyc)
+# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
+# =============================================================================
 
 # Import custom constants and utility functions
 from constants import FileDirectory, Spend
@@ -39,7 +40,7 @@ from utility.file_manager import FileManager  # Import your FileManager class he
 from utility.standardise_fields import DataStandardiser  # Custom data standardisation
 from utility.logging import setup_logging  # Custom logging setup
 
-# Call the logging setup function to initialise logging
+# Initialise logging
 setup_logging()
 
 #############################################################################################

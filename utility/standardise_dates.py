@@ -3,11 +3,13 @@ from dateutil import parser  # For parsing date and time strings into datetime o
 import pandas as pd  # For data manipulation and analysis
 import pytz  # For working with time zones
 import logging  # For logging information and debugging
-import sys  # For Python interpreter control
 
-# Configuration
-sys.dont_write_bytecode = True  # Prevent Python from writing bytecode files (.pyc)
-sys.path.append('/Users/hadid/Projects/ETL')  # Add path to system path
+# =============================================================================
+# import sys
+# # Add the path to the directory containing utils.py to sys.path
+# sys.dont_write_bytecode = True
+# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
+# =============================================================================
 
 # Custom imports
 from utility.logging import setup_logging  # Custom logging setup

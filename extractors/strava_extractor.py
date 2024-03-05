@@ -41,26 +41,28 @@ Note:
 
 # Import required libraries
 import logging
-import sys  # For Python interpreter control
 import time
 import requests
 from dotenv import set_key
 from importlib import reload
 
-# Configuration
-sys.dont_write_bytecode = True  # Prevent Python from writing bytecode files (.pyc)
-sys.path.append('/Users/hadid/Projects/ETL')  # Add path to system path
+# =============================================================================
+# import sys  # For Python interpreter control
+# # Configuration
+# sys.dont_write_bytecode = True  # Prevent Python from writing bytecode files (.pyc)
+# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
+# =============================================================================
 
 # Custom imports
 import config as config
 from constants import FileDirectory, StravaAPI
 from config import (STRAVA_ACCESS_TOKEN, STRAVA_REFRESH_TOKEN, STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET)
-from utility.file_manager import FileManager  # Import your FileManager class here
+from utility.file_manager import FileManager  
 from utility.standardise_fields import DataStandardiser
 from utility.cache_data import initialise_cache, update_cache
 from utility.logging import setup_logging  # Custom logging setup
 
-# Call the logging setup function to initialise logging
+# Initialise logging
 setup_logging()
 
 # Setting up headers for API requests

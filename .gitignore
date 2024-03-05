@@ -16,6 +16,9 @@ ENV/
 *.swo
 *.swn
 
+# Exclude setup cron script
+setup_cron.sh
+
 # Custom directories to ignore
 /archive/
 /credentials/

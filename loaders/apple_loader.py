@@ -30,12 +30,13 @@ Note:
 """
 
 
-# Import the required libraries
-import sys
-
-# Configuration
-sys.dont_write_bytecode = True  # Prevent Python from writing bytecode files (.pyc)
-sys.path.append('/Users/hadid/Projects/ETL')  # Add path to system path
+# =============================================================================
+# # Import the required libraries
+# import sys
+# # Configuration
+# sys.dont_write_bytecode = True  # Prevent Python from writing bytecode files (.pyc)
+# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
+# =============================================================================
 
 # Custom imports
 from constants import FileDirectory

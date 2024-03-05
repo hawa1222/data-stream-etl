@@ -11,7 +11,7 @@ import os
 from dotenv import load_dotenv
 
 # Load environment variables from .env
-load_dotenv('/Users/hadid/Projects/ETL/.env')
+load_dotenv('/Users/hadid/GitHub/ETL/.env')
 
 # Credentials and tokens for Strava AP
 STRAVA_CLIENT_ID = os.environ.get('STRAVA_CLIENT_ID')

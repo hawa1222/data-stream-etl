@@ -40,12 +40,15 @@ import logging  # For logging information and debugging
 import pytz
 from pandas import DataFrame
 from typing import Dict
-import sys  # For Python interpreter control
 
-# Configuration
-sys.dont_write_bytecode = True  # Prevent Python from writing bytecode files (.pyc)
-sys.path.append('/Users/hadid/Projects/ETL')  # Add path to system path
 
+# =============================================================================
+# import sys  # For Python interpreter control
+# # Configuration
+# sys.dont_write_bytecode = True  # Prevent Python from writing bytecode files (.pyc)
+# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
+# 
+# =============================================================================
 # Custom imports
 from constants import FileDirectory, AppleHealth
 from config import Settings

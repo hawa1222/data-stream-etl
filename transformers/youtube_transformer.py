@@ -33,10 +33,12 @@ import pandas as pd  # For data manipulation and analysis
 import numpy as np  # For numerical operations
 import logging  # For logging information and debugging
 
-# Import Python system libraries
-import sys  # For Python interpreter control
-sys.dont_write_bytecode = True  # Prevent Python from writing .pyc files
-sys.path.append('/Users/hadid/Projects/ETL')  # Add path to system path
+# =============================================================================
+# # Import Python system libraries
+# import sys  # For Python interpreter control
+# sys.dont_write_bytecode = True  # Prevent Python from writing .pyc files
+# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
+# =============================================================================
 
 # Import custom utility classes and functions
 from utility.logging import setup_logging  # For setting up logging

@@ -2,11 +2,13 @@ import os
 import pandas as pd
 from collections import defaultdict
 import xml.etree.ElementTree as ET
-import sys
 
-# Prevent bytecode (.pyc) file generation
-sys.dont_write_bytecode = True
-sys.path.append('/Users/hadid/Projects/ETL')  # Add path to system path
+# =============================================================================
+# import sys
+# # Prevent bytecode (.pyc) file generation
+# sys.dont_write_bytecode = True
+# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
+# =============================================================================
 
 from constants import FileDirectory, AppleHealth
 from utility.standardise_fields import DataStandardiser

@@ -37,11 +37,14 @@ Note:
 import os  # For operating system related functionality
 import pandas as pd  # For data manipulation and analysis
 import logging  # For logging information and debugging
-import sys  # For Python interpreter control
 
-# Configuration
-sys.dont_write_bytecode = True  # Prevent Python from writing bytecode files (.pyc)
-sys.path.append('/Users/hadid/Projects/ETL')  # Add path to system path
+
+# =============================================================================
+# import sys  # For Python interpreter control
+# # Configuration
+# sys.dont_write_bytecode = True  # Prevent Python from writing bytecode files (.pyc)
+# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
+# =============================================================================
 
 # Custom imports
 from constants import FileDirectory, Daylio

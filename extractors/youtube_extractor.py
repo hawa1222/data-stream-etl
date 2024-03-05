@@ -38,12 +38,13 @@ from google.oauth2.credentials import Credentials  # For managing OAuth2 credent
 from google.auth.transport.requests import Request  # For making HTTP requests in the Google Auth process
 from googleapiclient.discovery import build  # For building the Google API client
 
-# Import system-related libraries
-import sys  # For Python interpreter control
-
-# Configuration for Python system
-sys.dont_write_bytecode = True  # Prevent Python from writing bytecode files (.pyc)
-sys.path.append('/Users/hadid/Projects/ETL')  # Add path to system path
+# =============================================================================
+# # Import system-related libraries
+# import sys  # For Python interpreter control
+# # Configuration for Python system
+# sys.dont_write_bytecode = True  # Prevent Python from writing bytecode files (.pyc)
+# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
+# =============================================================================
 
 # Import custom utility modules
 from utility.logging import setup_logging  # Custom logging setup

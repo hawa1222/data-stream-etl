@@ -6,11 +6,13 @@ import chardet  # For character encoding detection
 import logging  # For logging information and debugging
 import xml.etree.ElementTree as ET  # For XML tree traversal
 from bs4 import BeautifulSoup  # For parsing HTML and XML documents
-import sys  # For Python interpreter control
 
-# Configuration
-sys.dont_write_bytecode = True  # Prevent Python from writing bytecode files (.pyc)
-sys.path.append('/Users/hadid/Projects/ETL')  # Add path to system path
+# =============================================================================
+# import sys
+# # Add the path to the directory containing utils.py to sys.path
+# sys.dont_write_bytecode = True
+# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
+# =============================================================================
 
 # Custom imports
 from utility.logging import setup_logging  # Custom logging setup

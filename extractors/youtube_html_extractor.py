@@ -25,19 +25,21 @@ Note:
 
 # Import required libraries
 import logging
-import sys  # For Python interpreter control
 import pandas as pd
 
-# Configuration
-sys.dont_write_bytecode = True  # Prevent Python from writing bytecode files (.pyc)
-sys.path.append('/Users/hadid/Projects/ETL')  # Add path to system path
+# =============================================================================
+# import sys  # For Python interpreter control
+# # Configuration
+# sys.dont_write_bytecode = True  # Prevent Python from writing bytecode files (.pyc)
+# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
+# =============================================================================
 
 # Custom imports
 from constants import FileDirectory, Youtube
-from utility.file_manager import FileManager  # Import your FileManager class here
+from utility.file_manager import FileManager
 from utility.logging import setup_logging  # Custom logging setup
 
-# Call the logging setup function to initialise logging
+# Initialise logging
 setup_logging()
 
 #############################################################################################

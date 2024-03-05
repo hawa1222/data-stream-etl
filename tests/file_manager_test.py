@@ -5,10 +5,12 @@ from pandas import DataFrame
 from unittest.mock import patch, Mock
 import logging
 
-import sys
-# Add the path to the directory containing utils.py to sys.path
-sys.dont_write_bytecode = True
-sys.path.append('/Users/hadid/Projects/ETL')  # Add path to system path
+# =============================================================================
+# import sys
+# # Add the path to the directory containing utils.py to sys.path
+# sys.dont_write_bytecode = True
+# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
+# =============================================================================
 
 from utility.file_manager import FileManager  # Import your FileManager class here
 
