@@ -23,4 +23,10 @@ setup_cron.sh
 /archive/
 /credentials/
 /data/
-/documentation/
+
+# Ignore everything in the documentation directory
+/documentation/*
+
+# But not these files:
+!/documentation/Project Documentation.docx
+!/documentation/SQL Schema.xlsx
