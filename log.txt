@@ -372,36 +372,6 @@
 2024-03-05 13:06:17,146 - INFO - The same two example values from published_at after conversion: ['2022-04-07T23:08:04+01:00', '2022-04-06T20:37:09+01:00']
 2024-03-05 13:06:17,148 - INFO - Successfully cleaned HTML data
 2024-03-05 13:06:18,009 - INFO - Successfully saved file to /Users/hadid/GitHub/ETL/data/clean_data/youtube_likes_dislikes.xlsx
-2024-03-05 13:06:30,252 - INFO - Checking if credentials need refreshing...
-2024-03-05 13:07:51,968 - INFO - "GET /?state=IpyGLAwKEftexFYnOI7DKJZfsgQFs7&code=4/0AeaYSHAmODscBPjceoghzWjClGDsPlD8NBIi9mxMbmGmFzoKQllJncs-w5Mqn4ULb2vuUg&scope=https://www.googleapis.com/auth/youtube.readonly%20https://www.googleapis.com/auth/youtube HTTP/1.1" 200 65
-2024-03-05 13:07:52,279 - INFO - Obtained credentials: {
-    "token": "ya29.a0AfB_byAa_Pcx5T7ZPDAmppLvmKmTO4nBDQj5WcWPz15SConb7i9r67XQ85JOaFWsmUrCO3ORvoT1sKKCSQwCBWP095yyMIIJD7DVdcHpt8toqMYQm2AC-jxwwhLk1JYIE5soT8b90p79DMb0lZr9mjc5Wao1_0lqYXXdaCgYKAUMSARMSFQHGX2MiXcm1BQpzr0mAc_9i91v1rg0171",
-    "refresh_token": "1//03Lq-Bfks4BZ_CgYIARAAGAMSNwF-L9IrxurmuaZl5fzyCZ4AnYNDFm7vclqJMDqhdpzAlmLwb33Y9l-AWHGvN6dfMFYWQARXMtQ",
-    "token_uri": "https://oauth2.googleapis.com/token",
-    "client_id": "1031982537654-cv95ig1of7kdbhpht35n6f0m54jqmlsp.apps.googleusercontent.com",
-    "client_secret": "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",
-    "scopes": [
-        "https://www.googleapis.com/auth/youtube.readonly",
-        "https://www.googleapis.com/auth/youtube"
-    ],
-    "expiry": "2024-03-05T14:07:51.278297Z"
-}
-2024-03-05 13:07:52,512 - INFO - New access token received: ya29.a0AfB_byCq7_45YbBnQbKpSkCm6WHnGmzaqT6PLkQS_I2RUl2dQTWgJ49pLs5CFHAUJYOJcPtJ-zMHMTRqoIs_V-3d-i2FlXtb4Zxl7E2cJFz0LuI18EjlS8Yfg-HfNyDmUaJ3CcjzvdCfcaW0PlN_v2hXGx338jZ3K373aCgYKAZUSARMSFQHGX2MiE10d234ZXI541AaiXVfZXQ0171
-2024-03-05 13:07:52,518 - INFO - Refresh token has changed to: 1//03Lq-Bfks4BZ_CgYIARAAGAMSNwF-L9IrxurmuaZl5fzyCZ4AnYNDFm7vclqJMDqhdpzAlmLwb33Y9l-AWHGvN6dfMFYWQARXMtQ
-2024-03-05 13:07:52,519 - INFO - Obtained credentials: {
-    "token": "ya29.a0AfB_byCq7_45YbBnQbKpSkCm6WHnGmzaqT6PLkQS_I2RUl2dQTWgJ49pLs5CFHAUJYOJcPtJ-zMHMTRqoIs_V-3d-i2FlXtb4Zxl7E2cJFz0LuI18EjlS8Yfg-HfNyDmUaJ3CcjzvdCfcaW0PlN_v2hXGx338jZ3K373aCgYKAZUSARMSFQHGX2MiE10d234ZXI541AaiXVfZXQ0171",
-    "refresh_token": "1//03Lq-Bfks4BZ_CgYIARAAGAMSNwF-L9IrxurmuaZl5fzyCZ4AnYNDFm7vclqJMDqhdpzAlmLwb33Y9l-AWHGvN6dfMFYWQARXMtQ",
-    "token_uri": "https://oauth2.googleapis.com/token",
-    "client_id": "1031982537654-cv95ig1of7kdbhpht35n6f0m54jqmlsp.apps.googleusercontent.com",
-    "client_secret": "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",
-    "scopes": [
-        "https://www.googleapis.com/auth/youtube.readonly",
-        "https://www.googleapis.com/auth/youtube"
-    ],
-    "expiry": "2024-03-05T14:07:51.510845Z"
-}
-2024-03-05 13:08:32,080 - INFO - Checking if credentials need refreshing...
-2024-03-05 13:11:59,928 - INFO - Checking if credentials need refreshing...
 2024-03-05 13:14:28,626 - INFO - Checking if credentials need refreshing...
 2024-03-05 13:14:28,627 - INFO - Credentials are still valid
 2024-03-05 13:14:28,632 - INFO - file_cache is only supported with oauth2client<4.0.0
