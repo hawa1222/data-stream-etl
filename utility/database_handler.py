@@ -6,7 +6,7 @@ import pandas as pd
 
 
 # =============================================================================
-# import sys
+import sys
 # # Add the path to the directory containing utils.py to sys.path
 # sys.dont_write_bytecode = True
 # sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
@@ -217,7 +217,6 @@ class DatabaseHandler:
                 # Rollback any changes made in the current transaction
                 self.connection.rollback()
 
-
     def generate_insert_query(self, table_name, column_mapping):
     
         """
@@ -271,7 +270,6 @@ class DatabaseHandler:
                 dataframes[table] = pd.DataFrame()  # Return an empty DataFrame on error
 
         return dataframes
-    
         
     def close_connection(self):
         """

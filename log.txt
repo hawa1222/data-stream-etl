@@ -738,3 +738,56 @@
 2024-03-05 13:16:02,351 - INFO - Post-load checks passed for table 'youtube_likes_dislikes'
 2024-03-05 13:16:02,364 - INFO - All compared rows for ['published_at'] in table 'youtube_subscriptions' match between pre-load and post-load data.
 2024-03-05 13:16:02,365 - INFO - Post-load checks passed for table 'youtube_subscriptions'
+2024-03-05 19:44:52,377 - INFO - Successfully connected to the database and set time zone to UTC
+2024-03-05 19:44:52,397 - INFO - Table 'apple_blood_glucose' dropped successfully
+2024-03-05 19:44:52,404 - INFO - Table 'apple_daily_activity' dropped successfully
+2024-03-05 19:44:52,408 - INFO - Table 'apple_fitness_metrics' dropped successfully
+2024-03-05 19:44:52,412 - INFO - Table 'apple_heart_rate' dropped successfully
+2024-03-05 19:44:52,416 - INFO - Table 'apple_low_hr_events' dropped successfully
+2024-03-05 19:44:52,419 - INFO - Table 'apple_running_metrics' dropped successfully
+2024-03-05 19:44:52,425 - INFO - Table 'apple_sleep' dropped successfully
+2024-03-05 19:44:52,429 - INFO - Table 'apple_steps' dropped successfully
+2024-03-05 19:44:52,433 - INFO - Table 'apple_walking_metrics' dropped successfully
+2024-03-05 19:44:52,440 - INFO - Table 'daylio_activities' dropped successfully
+2024-03-05 19:44:52,444 - INFO - Table 'daylio_activities_list' dropped successfully
+2024-03-05 19:44:52,448 - INFO - Table 'daylio_mood' dropped successfully
+2024-03-05 19:44:52,451 - INFO - Table 'spend_transactions' dropped successfully
+2024-03-05 19:44:52,457 - INFO - Table 'strava_activity' dropped successfully
+2024-03-05 19:44:52,461 - INFO - Table 'strava_gear' dropped successfully
+2024-03-05 19:44:52,464 - INFO - Table 'strava_performance_metrics' dropped successfully
+2024-03-05 19:44:52,466 - INFO - Table 'strava_sport_type' dropped successfully
+2024-03-05 19:44:52,475 - INFO - Table 'youtube_likes_dislikes' dropped successfully
+2024-03-05 19:44:52,478 - INFO - Table 'youtube_subscriptions' dropped successfully
+2024-03-05 19:44:52,479 - INFO - Database connection closed successfully.
+2024-03-12 14:02:15,334 - INFO - Successfully connected to the database and set time zone to UTC
+2024-03-14 11:50:59,939 - ERROR - Error while connecting to MySQL: 2003 (HY000): Can't connect to MySQL server on 'localhost' (61)
+2024-03-14 11:57:21,738 - ERROR - Error while connecting to MySQL: 2003 (HY000): Can't connect to MySQL server on 'localhost' (61)
+2024-03-14 11:59:14,147 - INFO - Successfully connected to the database and set time zone to UTC
+2024-03-14 13:32:10,824 - INFO - Successfully connected to the database and set time zone to UTC
+2024-03-14 13:32:15,467 - INFO - Successfully connected to the database and set time zone to UTC
+2024-03-14 13:32:18,688 - INFO - Successfully connected to the database and set time zone to UTC
+2024-03-14 14:46:55,634 - ERROR - Error while connecting to MySQL: 1045 (28000): Access denied for user 'hw_rtp'@'192.168.65.1' (using password: YES)
+2024-03-14 14:47:07,036 - INFO - Successfully connected to the database and set time zone to UTC
+2024-03-14 14:47:35,689 - INFO - Successfully connected to the database and set time zone to UTC
+2024-03-14 21:59:19,507 - ERROR - Error while connecting to MySQL: 1045 (28000): Access denied for user 'hw_rtp'@'192.168.65.1' (using password: YES)
+2024-03-14 22:00:25,263 - INFO - Successfully connected to the database and set time zone to UTC
+2024-03-15 09:48:50,501 - INFO - Successfully connected to the database and set time zone to UTC
+2024-03-15 09:48:55,237 - ERROR - Error while connecting to MySQL: 1045 (28000): Access denied for user 'hw_rtp'@'localhost' (using password: YES)
+2024-03-15 09:49:08,502 - INFO - Successfully connected to the database and set time zone to UTC
+2024-03-15 09:51:48,558 - INFO - <BrokerConnection node_id=bootstrap-0 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]>: connecting to localhost:9092 [('::1', 9092, 0, 0) IPv6]
+2024-03-15 09:51:48,559 - INFO - Probing node bootstrap-0 broker version
+2024-03-15 09:51:48,560 - ERROR - Connect attempt to <BrokerConnection node_id=bootstrap-0 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]> returned error 61. Disconnecting.
+2024-03-15 09:51:48,560 - INFO - <BrokerConnection node_id=bootstrap-0 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]>: Closing connection. KafkaConnectionError: 61 ECONNREFUSED
+2024-03-15 09:51:48,607 - INFO - <BrokerConnection node_id=bootstrap-0 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]>: connecting to localhost:9092 [('::1', 9092, 0, 0) IPv6]
+2024-03-15 09:51:48,608 - ERROR - Connect attempt to <BrokerConnection node_id=bootstrap-0 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]> returned error 61. Disconnecting.
+2024-03-15 09:51:48,608 - INFO - <BrokerConnection node_id=bootstrap-0 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]>: Closing connection. KafkaConnectionError: 61 ECONNREFUSED
+2024-03-15 09:51:48,657 - INFO - <BrokerConnection node_id=bootstrap-0 host=localhost:9092 <connecting> [IPv4 ('127.0.0.1', 9092)]>: connecting to localhost:9092 [('127.0.0.1', 9092) IPv4]
+2024-03-15 09:51:48,658 - ERROR - Connect attempt to <BrokerConnection node_id=bootstrap-0 host=localhost:9092 <connecting> [IPv4 ('127.0.0.1', 9092)]> returned error 61. Disconnecting.
+2024-03-15 09:51:48,658 - INFO - <BrokerConnection node_id=bootstrap-0 host=localhost:9092 <connecting> [IPv4 ('127.0.0.1', 9092)]>: Closing connection. KafkaConnectionError: 61 ECONNREFUSED
+2024-03-15 10:13:49,543 - ERROR - Error while connecting to MySQL: 2003 (HY000): Can't connect to MySQL server on 'localhost:3307' (61)
+2024-03-15 10:13:57,011 - ERROR - Error while connecting to MySQL: 1045 (28000): Access denied for user 'hw_rtp'@'localhost' (using password: YES)
+2024-03-15 11:06:28,127 - INFO - Successfully connected to the database and set time zone to UTC
+2024-03-15 16:01:59,444 - INFO - Successfully connected to the database and set time zone to UTC
+2024-03-15 16:02:06,754 - ERROR - Error while connecting to MySQL: 2005 (HY000): Unknown MySQL server host 'database' (8)
+2024-03-15 16:02:10,019 - INFO - Successfully connected to the database and set time zone to UTC
+2024-03-15 20:56:02,757 - INFO - Successfully connected to the database and set time zone to UTC
