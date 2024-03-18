@@ -19,6 +19,8 @@ ENV/
 # Exclude setup cron script
 setup_cron.sh
 
+logs.txt
+
 # Custom directories to ignore
 /archive/
 /credentials/
