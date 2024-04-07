@@ -61,7 +61,7 @@ personal_etl/
    git clone https://github.com/hawa1222/personal_etl.git
    ```
 
-2. Navigate to the project directory:
+2. **Navigate to the project directory**
    ```
    cd personal_etl
    ```
