@@ -30,5 +30,4 @@ logs.txt
 /documentation/*
 
 # But not these files:
-!/documentation/Project Documentation.docx
 !/documentation/SQL Schema.xlsx
