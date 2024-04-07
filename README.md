@@ -1,6 +1,4 @@
-# ETL Documentation
-
-## ETL Pipeline Project Overview
+# ETL Pipeline Project Overview
 
 Objective: Developed a Python-based ETL (Extract, Transform, Load) pipeline to centralise personal data from multiple sources into a MySQL database, aiming to enhance data accessibility for future application development.
 
