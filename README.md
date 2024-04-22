@@ -1,40 +1,23 @@
-# ETL Pipeline Project Overview
+# Personal Data Stream ETL
 
-Objective: Developed a Python-based ETL (Extract, Transform, Load) pipeline to centralise personal data from multiple sources into a MySQL database, aiming to enhance data accessibility for future application development.
+This project is a Python-MySQL ETL (Extract, Transform, Load) pipeline to centralise personal data from multiple sources into a structured database, enabling advanced data analysis and application development.
 
-Technologies Used: Python, MySQL, API integration, HTML scraping.
+## Project Objectives
 
-Key Features: Implemented diverse data extraction techniques such as API calls, manual exports, and HTML scraping. Developed a modular pipeline for scalable processing, and integrated data from various formats including Excel, CSV, JSON, XML into 19 distinct MySQL tables.
+- Establish a comprehensive personal data repository, laying the foundation for developing personalised applications and dashboards with the ability to query historical data.
+- Utilise a range of technologies such as Python, MySQL, API integration, HTML scraping.
+- Implement diverse data extraction techniques such as API calls, manual exports, and HTML scraping. 
+- Develop a modular pipeline for scalable processing.
+- Integrate data from various formats including Excel, CSV, JSON, XML into distinct MySQL tables.
 
-Outcome: Established a comprehensive personal data repository, laying the foundation for developing personalised applications and dashboards with the ability to query historical data.
 
-## Project Summary
+## Project Architecture
 
-### Directory Structure
-
-```plaintext
-personal_etl/
-├── __init__.py          # Marks directory as Python package directory.
-├── .env                 # Environment variables file.
-├── .git                 # Git repository metadata and tracking information.
-├── .gitignore           # Lists files and directories ignored by Git.
-├── archive              # Folder for archived items.
-├── config.py            # Configuration settings for the project.
-├── constants.py         # Constants used across the project.
-├── credentials          # Stores sensitive credentials (ignored by Git).
-├── data                 # Data files for the project.
-├── documentation        # Project documentation.
-├── exploratory_analysis # Scripts/notebooks for exploratory data analysis.
-├── extractors           # Modules/scripts for data extraction.
-├── loaders              # Modules for loading data into the system or database.
-├── main.py              # Main script for running the project.
-├── requirements.txt     # Project dependencies.
-├── setup_cron.sh        # Shell script for setting up cron jobs.
-├── tests                # Test scripts and test data.
-├── transformers         # Modules for data transformation.
-├── utility              # Utility scripts and helper functions.
-├── validation           # Validation scripts or modules for data or inputs.
-```
+- **Extractors**: Modules to retrieve data from various sources.
+- **Transformers**: Modules to clean, standardise, and manipulate the data format.
+- **Loader**: Modules responsible for inserting the data into the MySQL database.
+- **Utility**: Contains helper functions and classes for database interactions (`DatabaseHandler`) and file management (`FileManager`).
+- **Validation**: Script for post-load data validation to ensure data integrity and consistency.
 
 ### Data
 
@@ -44,29 +27,25 @@ personal_etl/
 - **Daylio**: Mood and activity tracking information.
 - **Spend**: Financial data personally tracked over 6 years.
 
-### Key Components
+## Prerequisites
 
-- **Extractors**: Modules to retrieve data from various sources.
-- **Transformers**: Modules to clean, standardise, and manipulate the data format.
-- **Loader**: Modules responsible for inserting the data into the MySQL database.
-- **Utility**: Contains helper functions and classes for database interactions (`DatabaseHandler`) and file management (`FileManager`).
-- **Validation**: Script for post-load data validation to ensure data integrity and consistency.
+Before running the Database API, ensure you have the following software installed:
+- Python (version 3.12)
+- MySQL (version 8.3.0)
 
-## Usage
+## Setup Instructions
 
-### Installation
-
-1. **Clone the Repository**
+1. **Clone the Repository:**
    ```
    git clone https://github.com/hawa1222/personal_etl.git
    ```
 
-2. **Navigate to the project directory**
+2. **Navigate to the project directory:**
    ```
    cd personal_etl
    ```
 
-3. **Set up your environment**
+3. **Set up your environment:**
 
    Make the setup script executable (if it's not already):
 
@@ -79,6 +58,9 @@ personal_etl/
    ```
    ./setup_environment.sh
    ```
+4. Create a `.env` file in the project root directory and provide the environment variables as specified in `.env_template`.
+
+## Usage
 
 ### Manual Execution
 
