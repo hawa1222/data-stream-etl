@@ -35,17 +35,17 @@ Before running the Database API, ensure you have the following software installe
 
 ## Setup Instructions
 
-1. **Clone the Repository:**
+1. Clone the Repository:
    ```
    git clone https://github.com/hawa1222/personal_etl.git
    ```
 
-2. **Navigate to the project directory:**
+2. Navigate to the project directory:
    ```
    cd personal_etl
    ```
 
-3. **Set up your environment:**
+3. Set up your environment:
 
    Make the setup script executable (if it's not already):
 
