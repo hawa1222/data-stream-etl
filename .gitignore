@@ -1,7 +1,15 @@
 # Byte-compiled / optimized / DLL files
+# Caches
 __pycache__/
 *.py[cod]
+*$py.class
 *.pyo
+
+# Ignore all .DS_Store 
+.DS_Store
+
+# Ignore .pytest_cache for Python testing
+.pytest_cache/
 
 # Environments
 .env
