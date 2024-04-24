@@ -37,12 +37,12 @@ Before running the Database API, ensure you have the following software installe
 
 1. Clone the Repository:
    ```
-   git clone https://github.com/hawa1222/data_stream_etl.git
+   git clone https://github.com/hawa1222/data-stream-etl.git
    ```
 
 2. Navigate to the project directory:
    ```
-   cd data_stream_etl
+   cd data-stream-etl
    ```
 
 3. Set up your environment:
