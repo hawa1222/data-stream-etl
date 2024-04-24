@@ -1,14 +1,7 @@
 import unittest
 import pandas as pd
 
-# =============================================================================
-# import sys
-# # Add the path to the directory containing utils.py to sys.path
-# sys.dont_write_bytecode = True
-# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
-# =============================================================================
-
-from utils import convert_to_time
+from utility.utils import convert_to_time
 
 class TestConvertToTime(unittest.TestCase):
 

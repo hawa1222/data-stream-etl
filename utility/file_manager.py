@@ -3,22 +3,14 @@ import os  # For operating system-dependent functionality
 import pandas as pd  # For data manipulation and analysis
 import json  # For reading and writing JSON files
 import chardet  # For character encoding detection
-import logging  # For logging information and debugging
 import xml.etree.ElementTree as ET  # For XML tree traversal
 from bs4 import BeautifulSoup  # For parsing HTML and XML documents
-
-# =============================================================================
-# import sys
-# # Add the path to the directory containing utils.py to sys.path
-# sys.dont_write_bytecode = True
-# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
-# =============================================================================
 
 # Custom imports
 from utility.logging import setup_logging  # Custom logging setup
 
 # Call the logging setup function to initialise logging
-setup_logging()
+logger = setup_logging()
 
 #############################################################################################
 
@@ -121,7 +113,7 @@ class XMLHandler:
         try:
             tree = ET.parse(file_path)  # Parse XML
         except ET.ParseError:  # Handle parsing errors
-            logging.info("Failed to parse the XML file.")
+            logger.info("Failed to parse the XML file.")
         return tree
 
     # Save ElementTree to XML
@@ -267,7 +259,7 @@ class FileManager:
 
         # Check if the handler exists for the given file extension
         if handler is None:
-            logging.error(f"Unsupported file format: {file_extension}")
+            logger.error(f"Unsupported file format: {file_extension}")
             return None
 
         # Get the full path of the file
@@ -277,7 +269,7 @@ class FileManager:
         loaded_data = handler.load(full_path, **kwargs)
 
         # Log the successful file load
-        logging.info(f"Successfully loaded file from {full_path}")
+        logger.info(f"Successfully loaded file from {full_path}")
 
         return loaded_data
 
@@ -301,7 +293,7 @@ class FileManager:
 
         # Check if the handler exists for the given file extension
         if handler is None:
-            logging.error(f"Unsupported file format: {file_extension}")
+            logger.error(f"Unsupported file format: {file_extension}")
             return
 
         # Get the full path of the file
@@ -311,7 +303,7 @@ class FileManager:
         handler.save(data, full_path)
 
         # Log the successful file save
-        logging.info(f"Successfully saved file to {full_path}")
+        logger.info(f"Successfully saved file to {full_path}")
 
     def _get_handler(self, file_extension):
         """

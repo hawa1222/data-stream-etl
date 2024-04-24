@@ -24,15 +24,7 @@ Note:
 """
 
 # Import required libraries
-import logging
 import pandas as pd
-
-# =============================================================================
-# import sys  # For Python interpreter control
-# # Configuration
-# sys.dont_write_bytecode = True  # Prevent Python from writing bytecode files (.pyc)
-# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
-# =============================================================================
 
 # Custom imports
 from constants import FileDirectory, Youtube
@@ -40,7 +32,7 @@ from utility.file_manager import FileManager
 from utility.logging import setup_logging  # Custom logging setup
 
 # Initialise logging
-setup_logging()
+logger = setup_logging()
 
 #############################################################################################
 
@@ -57,7 +49,7 @@ def parse_activity_data(html_file):
     """
 
     # Log the start of the parsing process
-    logging.info('Parsing HTML data...')
+    logger.info('Parsing HTML data...')
 
     # Find all div elements that match the specified class - these contain the activity data
     liked_video_elements = html_file.find_all(
@@ -102,7 +94,7 @@ def parse_activity_data(html_file):
     activity_data_df = pd.DataFrame(activity_data)
 
     # Log the successful completion of the parsing process
-    logging.info('Successfully parsed HTML data')
+    logger.info('Successfully parsed HTML data')
 
     # Return the DataFrame containing the activity data
     return activity_data_df

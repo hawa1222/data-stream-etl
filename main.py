@@ -32,7 +32,7 @@ from validation.post_load_checks import post_load
 
 # Initialise logging
 from utility.logging import setup_logging
-setup_logging()
+logger = setup_logging()
 
 
 ##################################################################################################################################

@@ -34,13 +34,6 @@ Note:
 # Import Python system libraries
 import pandas as pd
 
-# =============================================================================
-# import sys  
-# # Configuration
-# sys.dont_write_bytecode = True  # Prevent Python from writing bytecode files (.pyc)
-# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
-# =============================================================================
-
 # Import custom constants and utility functions
 from constants import FileDirectory, AppleHealth
 from utility.file_manager import FileManager
@@ -48,7 +41,7 @@ from utility.standardise_fields import DataStandardiser  # Custom data standardi
 from utility.logging import setup_logging  # Custom logging setup
 
 # Initialise logging
-setup_logging()
+logger = setup_logging()
 
 #############################################################################################
 
@@ -59,7 +52,7 @@ def apple_extractor():
     # Initialise FileManager and DataStandardiser classes
     file_manager = FileManager()
     standardiser = DataStandardiser()
-
+   
     # Load Apple Health XML file
     apple_data_tree = file_manager.load_file(AppleHealth.APPLE_XML_PATH, AppleHealth.APPLE_XML_DATA)
 
@@ -77,6 +70,7 @@ def apple_extractor():
         attributes = [elem.attrib for elem in root.iter(element)]
         # Check if attributes list is empty to avoid creating empty DataFrames
         if attributes:
+            logger.info(f"Extracted {element} data from Apple Health XML file.")
             # Convert the list of dictionaries to a DataFrame and store it in the dictionary
             df = pd.DataFrame(attributes)
             df_standardised = standardiser.standardise_df(df)
@@ -92,7 +86,6 @@ def apple_extractor():
     file_manager.save_file(FileDirectory.RAW_DATA_PATH, filtered_record_df, AppleHealth.RECORD_DATA)
     #file_manager.save_file(FileDirectory.RAW_DATA_PATH, df_part2, AppleHealth.RECORD_DATA_2)
     file_manager.save_file(FileDirectory.RAW_DATA_PATH, dataframes_dict[AppleHealth.ACTIVITY_ELEMENT], AppleHealth.ACTIVITY_DATA)
-
 
 if __name__ == "__main__":
     apple_extractor()

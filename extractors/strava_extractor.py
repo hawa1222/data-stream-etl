@@ -40,18 +40,11 @@ Note:
 """
 
 # Import required libraries
-import logging
+import sys
 import time
 import requests
 from dotenv import set_key
 from importlib import reload
-
-# =============================================================================
-# import sys  # For Python interpreter control
-# # Configuration
-# sys.dont_write_bytecode = True  # Prevent Python from writing bytecode files (.pyc)
-# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
-# =============================================================================
 
 # Custom imports
 import config as config
@@ -63,7 +56,7 @@ from utility.cache_data import initialise_cache, update_cache
 from utility.logging import setup_logging  # Custom logging setup
 
 # Initialise logging
-setup_logging()
+logger = setup_logging()
 
 # Setting up headers for API requests
 StravaAPI.AUTH_HEADER['Authorisation'] = f'Bearer {STRAVA_ACCESS_TOKEN}'
@@ -84,7 +77,7 @@ def refresh_access_token(token_url, client_id, client_secret, refresh_token):
         Tuple[str, str]: New access and refresh tokens.
     """
     # Log an informational message indicating the token refresh attempt.
-    logging.info("Attempting to refresh access token...")
+    logger.info("Attempting to refresh access token...")
 
     # Prepare the payload for the POST request to refresh the token.
     payload = {
@@ -104,19 +97,19 @@ def refresh_access_token(token_url, client_id, client_secret, refresh_token):
         new_refresh_token = json_response.get('refresh_token', refresh_token)  # Extract the new refresh token.
 
         # Log the new access token.
-        logging.info('New access token received')
+        logger.info('New access token received')
 
         # Update the environment variables with the new tokens
         set_key(FileDirectory.ENV_PATH, 'STRAVA_ACCESS_TOKEN', new_access_token)
         if new_refresh_token != refresh_token:
             set_key(FileDirectory.ENV_PATH, 'STRAVA_REFRESH_TOKEN', new_refresh_token)
-            logging.info(f"Refresh token has changed to: {new_refresh_token}")
+            logger.info(f"Refresh token has changed to: {new_refresh_token}")
         # Reload the configuration to pick up the new tokens
         reload(config)
         return new_access_token, new_refresh_token
 
     elif response.status_code != StravaAPI.HTTP_200_OK:
-        logging.error(f"Error refreshing access token: {response.text}")
+        logger.error(f"Error refreshing access token: {response.text}")
         sys.exit(1)
 
     return None, None
@@ -135,7 +128,7 @@ def api_error(status_code, activity_id=None):
     """
     # Check if the rate limit has been exceeded
     if status_code == StravaAPI.HTTP_429_RATE_LIMITED:
-        logging.warning('Rate limit exceeded. Sleeping for 15 minutes...')
+        logger.warning('Rate limit exceeded. Sleeping for 15 minutes...')
         time.sleep(StravaAPI.RATE_LIMIT_SLEEP_TIME)
         return True
     # Check if the token is unauthorised (likely expired)
@@ -147,7 +140,7 @@ def api_error(status_code, activity_id=None):
             StravaAPI.AUTH_HEADER['Authorization'] = f'Bearer {new_token}'
             return True
         else:
-            logging.error(f"Error refreshing token when fetching activity {activity_id}.")
+            logger.error(f"Error refreshing token when fetching activity {activity_id}.")
             return False
     return False
 
@@ -171,7 +164,7 @@ def get_strava_data(headers):
 
     # Infinite loop to keep fetching data until a stopping condition is met
     while True:
-        logging.info(f"Fetching summary data for page {page}...")
+        logger.info(f"Fetching summary data for page {page}...")
         # Make an API request to get the activity data
         response = requests.get(StravaAPI.BASE_URL, headers=headers, params={"page": page, "per_page": per_page})
 
@@ -181,7 +174,7 @@ def get_strava_data(headers):
 
         # Check if the API response is anything other than HTTP 200
         elif response.status_code != StravaAPI.HTTP_200_OK:
-            logging.error(f"Error fetching summary data: {response.text}")
+            logger.error(f"Error fetching summary data: {response.text}")
             break  # Exit the loop if there's an error
 
         else:
@@ -213,7 +206,7 @@ def get_strava_activity(new_activity_ids, headers):
     detailed_data_json = []  # Initialise an empty list to store detailed data
 
     for activity_id in new_activity_ids:
-        logging.info(f"Fetching detailed data for activity {activity_id}...")
+        logger.info(f"Fetching detailed data for activity {activity_id}...")
         url = StravaAPI.ACTIVITY_URL.format(activity_id)
         response = requests.get(url, headers=headers)
 
@@ -222,7 +215,7 @@ def get_strava_activity(new_activity_ids, headers):
         elif api_error(response.status_code, activity_id):
             continue  # Skip this iteration and try the next activity ID
         else:
-            logging.error("Error fetching detailed data for activity %s: %s", activity_id, response.text)
+            logger.error("Error fetching detailed data for activity %s: %s", activity_id, response.text)
 
     return detailed_data_json
 
@@ -252,8 +245,8 @@ def strava_extractor():
     new_activities_df = standardiser.json_normalise(new_activities_json, one_level_above=False)
      
     # Check if the 'id' column exists in the DataFrame and is not empty
-    if StravaAPI.ID in cached_summary_data.columns and not cached_summary_data.empty:
-        cached_ids = set(cached_summary_data[StravaAPI.ID])
+    if StravaAPI.LEGACY_ACT_ID in cached_summary_data.columns and not cached_summary_data.empty:
+        cached_ids = set(cached_summary_data[StravaAPI.LEGACY_ACT_ID])
     else:
         # If the column doesn't exist or the DataFrame is empty, use an empty set
         cached_ids = set()
@@ -261,8 +254,8 @@ def strava_extractor():
 
     # Filter out the new activities
     new_activity_ids = [
-        activity[StravaAPI.ID] for activity in
-        new_activities_json if activity[StravaAPI.ID] not in cached_ids]
+        activity[StravaAPI.LEGACY_ACT_ID] for activity in
+        new_activities_json if activity[StravaAPI.LEGACY_ACT_ID] not in cached_ids]
 
     # Fetch detailed data for new activities as JSON
     new_detailed_json = get_strava_activity(new_activity_ids, StravaAPI.AUTH_HEADER)
@@ -271,10 +264,10 @@ def strava_extractor():
     new_detailed_df = standardiser.json_normalise(new_detailed_json, one_level_above=True)
 
     # Update the Excel cache files
-    updated_summary_data = update_cache(FileDirectory.RAW_DATA_PATH, cached_summary_data, new_activities_df,
-                                        StravaAPI.SUMMARY_CACHE_FILE, StravaAPI.ID)
+    # updated_summary_data = update_cache(FileDirectory.RAW_DATA_PATH, cached_summary_data, new_activities_df,
+    #                                     StravaAPI.SUMMARY_CACHE_FILE, StravaAPI.LEGACY_ACT_ID)
     updated_detailed_data = update_cache(FileDirectory.RAW_DATA_PATH, cached_detailed_data, new_detailed_df,
-                                         StravaAPI.DETAIL_CACHE_FILE, StravaAPI.ID)
+                                         StravaAPI.DETAIL_CACHE_FILE, StravaAPI.LEGACY_ACT_ID)
 
     # Save the final, updated detailed data to an Excel file
     file_manager.save_file(FileDirectory.RAW_DATA_PATH, updated_detailed_data, StravaAPI.FINAL_DATA)

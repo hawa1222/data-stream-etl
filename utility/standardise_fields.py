@@ -2,13 +2,12 @@
 import re  # Importing the regular expressions library for string manipulation
 import json  # Importing the JSON library for JSON data handling
 import pandas as pd  # Importing the pandas library for DataFrame operations
-import logging
 
 # Custom imports
 from utility.logging import setup_logging  # Custom logging setup
 
 # Call the logging setup function to initialise logging
-setup_logging()
+logger = setup_logging()
 
 #############################################################################################
 
@@ -40,7 +39,7 @@ class DataStandardiser:
         # Remove rows where all fields are NaN
         new_df = df.dropna(how='all').reset_index(drop=True)
     
-        logging.info('Removed rows with NaN in all fields.')
+        logger.info('Removed rows with NaN in all fields.')
     
         return new_df
     
@@ -114,7 +113,7 @@ class DataStandardiser:
         
         # Update the DataFrame column names with the standardised ones
         df.columns = new_columns
-        logging.info('Field names for standardised')
+        logger.info('Field names for standardised')
         
         return df
     
@@ -160,7 +159,7 @@ class DataStandardiser:
         # Rename the DataFrame's columns
         df.rename(columns=new_columns, inplace=True)
         
-        logging.info('JSON data normalised')
+        logger.info('JSON data normalised')
         
         # Return the DataFrame with standardised column names
         return self.standardise_df(df)

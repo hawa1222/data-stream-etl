@@ -31,14 +31,6 @@ Note:
 import os  # For interacting with the operating system
 import pandas as pd  # For data manipulation and analysis
 import numpy as np  # For numerical operations
-import logging  # For logging information and debugging
-
-# =============================================================================
-# # Import Python system libraries
-# import sys  # For Python interpreter control
-# sys.dont_write_bytecode = True  # Prevent Python from writing .pyc files
-# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
-# =============================================================================
 
 # Import custom utility classes and functions
 from utility.logging import setup_logging  # For setting up logging
@@ -53,7 +45,7 @@ from utility.utils import generate_filename
 from constants import FileDirectory, Youtube
 
 # Initialise logging
-setup_logging()
+logger = setup_logging()
 
 #############################################################################################
 
@@ -86,7 +78,7 @@ def process_and_save_data(file_manager, file_name, columns_needed, new_name_dict
     Returns:
     - pandas.DataFrame, pandas.DataFrame: The original data and the processed data.
     """
-    logging.info(f'Processing {file_name}')
+    logger.info(f'Processing {file_name}')
 
     # Load the raw data from the specified Excel file
     data = file_manager.load_file(FileDirectory.RAW_DATA_PATH, file_name)
@@ -100,7 +92,7 @@ def process_and_save_data(file_manager, file_name, columns_needed, new_name_dict
         data_updated = standardise_dates(data_copy, Youtube.DATE)
     else:
         # Log a warning if the date field is not found
-        logging.warning("Date field not found in activity data.")
+        logger.warning("Date field not found in activity data.")
 
     # Use the get_best_url function to populate the 'thumbnail_url' column
     data_updated[Youtube.THUMBNAIL] = data_updated.apply(get_best_url, axis=1)

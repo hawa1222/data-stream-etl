@@ -41,16 +41,8 @@ Note:
 
 # Import the required libraries
 import random
-import logging
 import pandas as pd
 from decimal import Decimal
-
-# =============================================================================
-# import sys
-# # Add the path to the directory containing utils.py to sys.path
-# sys.dont_write_bytecode = True
-# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
-# =============================================================================
 
 # Custom imports
 from constants import FileDirectory, Daylio, StravaAPI, Spend, Youtube
@@ -60,7 +52,7 @@ from utility.logging import setup_logging
 from utility.database_handler import DatabaseHandler
 
 # Initialize logging
-setup_logging()
+logger = setup_logging()
 
 ##################################################################################################################################
 
@@ -102,11 +94,11 @@ def compare_random_rows(df_db, df_pre_load, primary_keys, table_name):
 
             if pre_load_value != db_value or type(pre_load_value) != type(db_value):
                 # Log error with table name, mismatch details, and data types
-                logging.error(f"Mismatch found in table '{table_name}' for {primary_keys} {key_row[primary_keys]}: Field '{field}' has pre-load value '{pre_load_value}' (type: {type(pre_load_value).__name__}) and post-load value '{db_value}' (type: {type(db_value).__name__})")
+                logger.error(f"Mismatch found in table '{table_name}' for {primary_keys} {key_row[primary_keys]}: Field '{field}' has pre-load value '{pre_load_value}' (type: {type(pre_load_value).__name__}) and post-load value '{db_value}' (type: {type(db_value).__name__})")
                 return False
 
     # Log success with table name
-    logging.info(f"All compared rows for {primary_keys} in table '{table_name}' match between pre-load and post-load data.")
+    logger.info(f"All compared rows for {primary_keys} in table '{table_name}' match between pre-load and post-load data.")
     return True
 
 def post_load_checks(pre_Load_dfs, db_dataframes):
@@ -118,7 +110,7 @@ def post_load_checks(pre_Load_dfs, db_dataframes):
 
         # Log dimension mismatch with table name
         if df_pre_load.shape[0] != df_db.shape[0]:
-            logging.error(f"Dimension mismatch in table '{table_name}': pre-load count {df_pre_load.shape[0]}, post-load count {df_db.shape[0]}")
+            logger.error(f"Dimension mismatch in table '{table_name}': pre-load count {df_pre_load.shape[0]}, post-load count {df_db.shape[0]}")
             continue  # Proceed to next dataset
 
         # Determine primary key(s) for each table
@@ -129,7 +121,7 @@ def post_load_checks(pre_Load_dfs, db_dataframes):
             continue  # Proceed to next dataset
 
         # Log success with table name
-        logging.info(f"Post-load checks passed for table '{table_name}'")
+        logger.info(f"Post-load checks passed for table '{table_name}'")
 
 ##################################################################################################################################
 
@@ -146,12 +138,9 @@ def post_load():
         'apple_sleep': 'apple_sleep.xlsx',
         'apple_steps': 'apple_steps.xlsx',
         Daylio.MOOD_DATA.split('.')[0]: (Daylio.MOOD_DATA),
-        Daylio.ACTIVITY_LIST_DATA.split('.')[0]: (Daylio.ACTIVITY_LIST_DATA),
         Daylio.ACTIVITY_DATA.split('.')[0]: (Daylio.ACTIVITY_DATA),
         Spend.CLEAN_DATA.split('.')[0]: Spend.CLEAN_DATA,
         StravaAPI.PERFORMANCE_DATA.split('.')[0]: (StravaAPI.PERFORMANCE_DATA),
-        StravaAPI.SPORT_DATA.split('.')[0]: (StravaAPI.SPORT_DATA),
-        StravaAPI.GEAR_DATA.split('.')[0]: (StravaAPI.GEAR_DATA),
         StravaAPI.ACTIVITY_DATA.split('.')[0]: (StravaAPI.ACTIVITY_DATA),
         Youtube.CLEAN_PLAYLIST_DATA.split('.')[0]: (Youtube.CLEAN_PLAYLIST_DATA),
         Youtube.SUBS_DATA.split('.')[0]: (Youtube.SUBS_DATA)

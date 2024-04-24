@@ -1,24 +1,13 @@
 # Import the required libraries
 import os  # For operating system related functionality
-import pandas as pd  # For data manipulation and analysis
-import logging  # For logging information and debugging
-import textwrap  # For text wrapping and filling
 import inspect
-import shutil
 from datetime import datetime
-
-# =============================================================================
-# import sys
-# # Add the path to the directory containing utils.py to sys.path
-# sys.dont_write_bytecode = True
-# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
-# =============================================================================
 
 from utility.logging import setup_logging
 from config import Settings
 
 # Setting up logging
-setup_logging()
+logger = setup_logging()
 
 #############################################################################################
 

@@ -1,7 +1,9 @@
 # Import required libraries
 import pandas as pd  # For data manipulation and analysis
-import logging  # For logging information and debugging
 from datetime import datetime  # For working with date and time
+
+from utility.logging import setup_logging
+logger = setup_logging()
 
 #############################################################################################
 
@@ -99,14 +101,14 @@ class DataFrameDocumenter:
         summary_df = pd.DataFrame(field_summaries)
         summary_df.to_excel(self.writer, sheet_name=sheet_name, startrow=13, index=False)
 
-        logging.info(f"Successfully completed documenting {sheet_name} in Excel.")  # Log info
+        logger.info(f"Successfully completed documenting {sheet_name} in Excel.")  # Log info
 
     def save(self):
         """
         Save the Excel workbook.
         """
         self.writer.close()  # Save the Excel file
-        logging.info(f"Successfully saved file to {self.file_path}")
+        logger.info(f"Successfully saved file to {self.file_path}")
 
 
 

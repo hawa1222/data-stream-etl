@@ -26,12 +26,12 @@ ENV/
 
 # Custom files to ignore 
 setup_cron.sh
-log.txt
 
 # Custom directories to ignore
 /archive/
 /credentials/
 /data/
+/logs/
 /documentation/*
 
 # But not these files:

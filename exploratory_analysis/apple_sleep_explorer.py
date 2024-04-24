@@ -17,7 +17,7 @@ from utility.file_manager import FileManager
 
 # Import and set up logging
 from utility.logging import setup_logging
-setup_logging()
+logger = setup_logging()
 
 ##################################################################################################################################
 

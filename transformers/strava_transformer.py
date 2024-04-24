@@ -10,11 +10,8 @@ Key Processes:
    - Converts sport text and adjusts capitalisation.
    - Converts times from seconds to minutes.
 
-2. Data Normalisation (3NF):
-   - Creates DataFrames for unique sport types and gear names.
-   - Merges the original DataFrame with the new DataFrames.
-   - Divides data into four DataFrames for 3NF compliance:
-     - Sport Types, Gear Names, Activity Information, Performance Metrics.
+2. Partial Data Normalisation:
+   - Divides data into two DataFrame tables: Activity Information and Performance Metrics.
 
 3. File Management:
    - Handles file loading and saving.
@@ -34,14 +31,6 @@ Note:
 # Import the required libraries
 import os
 import pandas as pd
-import logging
-
-# =============================================================================
-# import sys
-# # Configuration
-# sys.dont_write_bytecode = True  # Prevent Python from writing bytecode files (.pyc)
-# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
-# =============================================================================
 
 # Custom imports
 from constants import FileDirectory, StravaAPI
@@ -53,7 +42,7 @@ from utility.documentation import DataFrameDocumenter
 from utility.utils import generate_filename
 
 # Setting up logging
-setup_logging()
+logger = setup_logging()
 
 #############################################################################################
 
@@ -73,12 +62,12 @@ def transform_data(df: pd.DataFrame) -> pd.DataFrame:
     # Renaming multiple columns in the DataFrame
     df = df.rename(columns={
         StravaAPI.LEGACY_GEAR: StravaAPI.GEAR_NAME,
-        StravaAPI.ID: StravaAPI.ACTIVITY_ID
+        StravaAPI.LEGACY_ACT_ID: StravaAPI.ACTIVITY_ID,
+        StravaAPI.LEGACY_ACT_NAME: StravaAPI.ACTIVITY_NAME,
     })
 
     # Select only the columns we're interested in
     df = df[StravaAPI.CLEAN_FIELDS]
-
     # Create a copy of the DataFrame to avoid warnings
     df = df.copy()
 
@@ -86,18 +75,15 @@ def transform_data(df: pd.DataFrame) -> pd.DataFrame:
     df[StravaAPI.SPORT] = df[StravaAPI.SPORT].replace(StravaAPI.SPORT_TEXT, StravaAPI.SPORT_TEXT_NEW)
     # Add a space before each capital letter that follows a lowercase letter
     df[StravaAPI.SPORT] = df[StravaAPI.SPORT].str.replace(r'(?<=[a-s])(?=[A-Z])', ' ', regex=True)
-
     # Convert times from seconds to minutes
     df[StravaAPI.MOVE_TIME] = (df[StravaAPI.MOVE_TIME] / 60).round(2)
     df[StravaAPI.ELAP_TIME] = (df[StravaAPI.ELAP_TIME] / 60).round(2)
     
-    
-
-    logging.info('Transformed data')
+    logger.info('Cleaned & transformed data')
 
     return df
 
-def normalise_data_for_3nf(df: pd.DataFrame):
+def split_data(df: pd.DataFrame):
     """
     Normalises the data for 3rd normal form (3NF) compliance.
 
@@ -105,30 +91,16 @@ def normalise_data_for_3nf(df: pd.DataFrame):
         df: Input DataFrame.
 
     Returns:
-        Four DataFrames each containing a subset of the data for 3NF compliance.
+        Two DataFrames, one containing activity information with sport type and gear, and the other containing performance metrics.
     """
 
-    # Create a DataFrame with unique sport types
-    df_sport_type = df[[StravaAPI.SPORT]].drop_duplicates().reset_index(drop=True)
-    df_sport_type[StravaAPI.SPORT_ID] = range(1, len(df_sport_type) + 1)
-
-    # Create a DataFrame with unique gear names, dropping any null values
-    df_gear = df[[StravaAPI.GEAR_NAME]].drop_duplicates().dropna().reset_index(drop=True)
-    df_gear[StravaAPI.GEAR_ID] = range(1, len(df_gear) + 1)
-
-    # Merge the original DataFrame with the newly created DataFrames
-    df = pd.merge(df, df_sport_type, how='left', on=StravaAPI.SPORT)
-    df = pd.merge(df, df_gear, how='left', left_on=StravaAPI.GEAR_NAME, right_on=StravaAPI.GEAR_NAME)
-
-    # Create a DataFrame for activity information
+    # Create a DataFrame for activity information with sport type and gear
     df_activity = df[StravaAPI.ACTIVITY_FIELDS]
-
     # Create a DataFrame for performance metrics
     df_performance_metrics = df[StravaAPI.PERFORMANCE_FIELDS]
+    logger.info("Data partially normalised into two tables: df_activity, df_performance_metrics")
 
-    logging.info("Data normalised into 3NF compliant tables: df_sport_type, df_gear, df_activity, df_performance_metrics")
-
-    return df_sport_type, df_gear, df_activity, df_performance_metrics
+    return df_activity, df_performance_metrics
 
 #############################################################################################
 
@@ -146,15 +118,13 @@ def strava_transformer():
     # Transform the data
     clean_strava_data = transform_data(strava_data)
 
-    # Normalise data for 3NF compliance
-    df_sport_type, df_gear, df_activity, df_performance_metrics = normalise_data_for_3nf(clean_strava_data)
+    # Normalise data
+    df_activity, df_performance_metrics = split_data(clean_strava_data)
 
     # Save the normalised DataFrames as Excel files
     # Define a dictionary mapping StravaAPI constants to their respective dataframes
     datasets = {
         StravaAPI.FINAL_DATA: clean_strava_data,
-        StravaAPI.SPORT_DATA: df_sport_type,
-        StravaAPI.GEAR_DATA: df_gear,
         StravaAPI.ACTIVITY_DATA: df_activity,
         StravaAPI.PERFORMANCE_DATA: df_performance_metrics
     }
@@ -168,9 +138,7 @@ def strava_transformer():
     data_frames = {
         'raw': {format_data_name(StravaAPI.FINAL_DATA): strava_data},
         'clean': {format_data_name(StravaAPI.FINAL_DATA): clean_strava_data},
-        'transformed': {format_data_name(StravaAPI.SPORT_DATA): df_sport_type,
-                       format_data_name(StravaAPI.GEAR_DATA): df_gear,
-                       format_data_name(StravaAPI.ACTIVITY_DATA): df_activity,
+        'transformed': {format_data_name(StravaAPI.ACTIVITY_DATA): df_activity,
                        format_data_name(StravaAPI.PERFORMANCE_DATA): df_performance_metrics}
     }
 

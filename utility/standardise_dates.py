@@ -2,21 +2,13 @@
 from dateutil import parser  # For parsing date and time strings into datetime objects
 import pandas as pd  # For data manipulation and analysis
 import pytz  # For working with time zones
-import logging  # For logging information and debugging
-
-# =============================================================================
-# import sys
-# # Add the path to the directory containing utils.py to sys.path
-# sys.dont_write_bytecode = True
-# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
-# =============================================================================
 
 # Custom imports
 from utility.logging import setup_logging  # Custom logging setup
 from config import Settings
 
 # Call the logging setup function to initialise logging
-setup_logging()
+logger = setup_logging()
 
 ################################################################################
 
@@ -43,7 +35,7 @@ def convert_to_iso_with_tz(dt, local_tz=Settings.TIMEZONE):
             dt = dt.replace(microsecond=0)
             return dt.isoformat()
     except Exception as e:
-        logging.error(f"Error converting datetime: {e}, with value: {dt}")
+        logger.error(f"Error converting datetime: {e}, with value: {dt}")
         return None
 
 def standardise_dates(df, date_columns):
@@ -64,15 +56,15 @@ def standardise_dates(df, date_columns):
     # Loop through each date column to standardize it
     for date_column in date_columns:
         # Log initial data type and example values
-        logging.info(f"Data type of {date_column} before conversion: {df[date_column].dtype}")
-        logging.info(f"Two example values from {date_column} before conversion: {df[date_column].head(2).tolist()}")
+        logger.info(f"Data type of {date_column} before conversion: {df[date_column].dtype}")
+        logger.info(f"Two example values from {date_column} before conversion: {df[date_column].head(2).tolist()}")
 
         # Apply the conversion function to each element in the date column
         df[date_column] = df[date_column].apply(convert_to_iso_with_tz)
 
         # Log data type and example values after conversion
-        logging.info(f"Data type of {date_column} after conversion: {df[date_column].dtype}")
-        logging.info(f"The same two example values from {date_column} after conversion: {df[date_column].head(2).tolist()}")
+        logger.info(f"Data type of {date_column} after conversion: {df[date_column].dtype}")
+        logger.info(f"The same two example values from {date_column} after conversion: {df[date_column].head(2).tolist()}")
 
     return df
 

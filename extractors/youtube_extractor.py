@@ -28,7 +28,6 @@ Note:
 """
 
 # Import standard libraries
-import logging  # For logging information and debugging
 import re  # For regular expressions
 from importlib import reload  # For reloading modules
 from dotenv import set_key  # For setting environment variables
@@ -37,14 +36,6 @@ from dotenv import set_key  # For setting environment variables
 from google.oauth2.credentials import Credentials  # For managing OAuth2 credentials
 from google.auth.transport.requests import Request  # For making HTTP requests in the Google Auth process
 from googleapiclient.discovery import build  # For building the Google API client
-
-# =============================================================================
-# # Import system-related libraries
-# import sys  # For Python interpreter control
-# # Configuration for Python system
-# sys.dont_write_bytecode = True  # Prevent Python from writing bytecode files (.pyc)
-# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
-# =============================================================================
 
 # Import custom utility modules
 from utility.logging import setup_logging  # Custom logging setup
@@ -59,7 +50,7 @@ from config import (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_ACCESS_TOKEN,
 from constants import FileDirectory, Youtube
 
 # Initialise logging
-setup_logging()
+logger = setup_logging()
 
 #############################################################################################
 
@@ -79,7 +70,7 @@ def refresh_google_token(token, refresh_token, client_id, client_secret, token_u
     - Credentials: The updated Google OAuth2 credentials.
     """
     # Check if credentials need refreshing
-    logging.info("Checking if credentials need refreshing...")
+    logger.info("Checking if credentials need refreshing...")
     credentials = Credentials.from_authorized_user_info(
         {
             "client_id": client_id,
@@ -104,16 +95,16 @@ def refresh_google_token(token, refresh_token, client_id, client_secret, token_u
 #         # Format the expiry date in ISO 8601 format
 #         formatted_expiry = new_token_expiry.isoformat()
 # =============================================================================
-        logging.info("New access token received.")
+        logger.info("New access token received.")
         # Update environment variables with new token details
         set_key(FileDirectory.ENV_PATH, 'GOOGLE_ACCESS_TOKEN', str(new_access_token))
         set_key(FileDirectory.ENV_PATH, 'GOOGLE_TOKEN_EXPIRY', formatted_expiry)
         # If a new refresh token is received, update it
         if new_refresh_token != refresh_token:
             set_key(FileDirectory.ENV_PATH, 'GOOGLE_REFRESH_TOKEN', str(new_refresh_token))
-            logging.info("New refresh token received.")
+            logger.info("New refresh token received.")
     else:
-        logging.info('Credentials are still valid')
+        logger.info('Credentials are still valid')
 
     # Reload the config to update environment variables
     reload(config)
@@ -154,7 +145,7 @@ def youtube_api(credentials, api_type, params, max_pages=200):
         try:
             api_response = api_function.execute()
         except Exception as e:
-            print(f"An error occurred: {e}")
+            logger.error(f"An error occurred: {e}")
             break
 
         # Loop through each item in the API response to extract details
@@ -165,7 +156,7 @@ def youtube_api(credentials, api_type, params, max_pages=200):
         page += 1
         # Fetch the next page token for pagination
         next_page_token = api_response.get("nextPageToken")
-        logging.info(f"Fetched page {page} data for {api_type}.")
+        logger.info(f"Fetched page {page} data for {api_type}.")
 
         # Break if no more pages
         if next_page_token is None:
@@ -177,6 +168,7 @@ def youtube_api(credentials, api_type, params, max_pages=200):
 
     # Apply text cleaning to description column
     api_data_df[Youtube.DESC] = api_data_df[Youtube.DESC].apply(clean_description)
+    logger.info(f"Cleaned description column for {api_type}.")
 
     return api_data_df
 
@@ -228,9 +220,13 @@ def youtube_extractor():
     file_manager = FileManager()
 
     # Check if the token is expired and refresh it if necessary
-    credentials = refresh_google_token(GOOGLE_ACCESS_TOKEN, GOOGLE_REFRESH_TOKEN,
-                                       GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
-                                       Youtube.TOKEN_URL, GOOGLE_TOKEN_EXPIRY)
+    try:
+        credentials = refresh_google_token(GOOGLE_ACCESS_TOKEN, GOOGLE_REFRESH_TOKEN,
+                                           GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
+                                           Youtube.TOKEN_URL, GOOGLE_TOKEN_EXPIRY)
+    except Exception as e:
+        logger.error("Error refreshing Google API token: {}".format(str(e)))
+        return None
 
     # Get the API response for channels
     channel_response = youtube_api(credentials, Youtube.CHANNEL_API_CALL, Youtube.CHANNEL_API_PARAMS)
@@ -240,7 +236,6 @@ def youtube_extractor():
     playlist_response[Youtube.PLAYLIST] = Youtube.PLAYLIST_VALUE[0]
     playlist_response[Youtube.SOURCE] = Youtube.SOURCE_VALUE[0]
     
-    playlist_response.columns
     # Load & update the cached data
     likes_cache = initialise_cache(FileDirectory.RAW_DATA_PATH, Youtube.CACHE_LIKES_DATA)
     updated_likes_cache = update_cache(FileDirectory.RAW_DATA_PATH, likes_cache, playlist_response,

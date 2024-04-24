@@ -23,16 +23,6 @@ Note:
 - It standardises dates and subsets the data to keep only desired fields for further analysis.
 """
 
-# Import required libraries
-import logging  # For logging information and debugging
-
-# =============================================================================
-# import sys  # For Python interpreter control
-# # Configuration
-# sys.dont_write_bytecode = True  # Prevent Python from writing bytecode files (.pyc)
-# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
-# =============================================================================
-
 # Custom imports
 from constants import FileDirectory, Youtube
 from utility.file_manager import FileManager 
@@ -40,7 +30,7 @@ from utility.standardise_dates import standardise_dates  # For standardising dat
 from utility.logging import setup_logging  # Custom logging setup
 
 # Initialise logging
-setup_logging()
+logger = setup_logging()
 
 #############################################################################################
 
@@ -56,7 +46,7 @@ def manipulate_activity_data(activity_df):
         DataFrame: DataFrame containing the manipulated activity data.
     """
 
-    logging.info('Cleaning data...')
+    logger.info('Cleaning data...')
 
     # Extract the video_id from the video_url field
     activity_df[Youtube.VID_ID] = activity_df[Youtube.VID_URL].str.split('v=').str[1].str.split('&').str[0]
@@ -79,7 +69,7 @@ def manipulate_activity_data(activity_df):
     # Subset set to keep only desired fields
     activity_df = activity_df[Youtube.LIKES_FIELDS]
 
-    logging.info('Successfully cleaned HTML data')
+    logger.info('Successfully cleaned HTML data')
 
     # Return the manipulated DataFrame
     return activity_df

@@ -3,16 +3,14 @@ import os
 import json
 from pandas import DataFrame
 from unittest.mock import patch, Mock
-import logging
-
-# =============================================================================
-# import sys
-# # Add the path to the directory containing utils.py to sys.path
-# sys.dont_write_bytecode = True
-# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
-# =============================================================================
 
 from utility.file_manager import FileManager  # Import your FileManager class here
+from utility.logging import setup_logging
+
+# Setting up logging
+logger = setup_logging()
+
+#--------------------------------------------------------------------------------
 
 # Mock the handler classes
 class MockCSVHandler:
@@ -68,7 +66,6 @@ class TestFileManager(unittest.TestCase):
 
     def test_load_unsupported_file(self):
         manager = FileManager("./")
-        logging.basicConfig(level=logging.ERROR)
         with self.assertLogs(level='ERROR') as log:
             self.assertIsNone(manager.load_file("test.xyz"))
             self.assertIn('ERROR:root:Unsupported file format: .xyz', log.output)

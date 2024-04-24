@@ -29,15 +29,6 @@ Note:
 - It's a part of a larger data processing system focusing on health data management and analysis.
 """
 
-
-# =============================================================================
-# # Import the required libraries
-# import sys
-# # Configuration
-# sys.dont_write_bytecode = True  # Prevent Python from writing bytecode files (.pyc)
-# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
-# =============================================================================
-
 # Custom imports
 from constants import FileDirectory
 from config import DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
@@ -46,7 +37,7 @@ from utility.logging import setup_logging
 from utility.database_handler import DatabaseHandler
 
 # Initialise logging
-setup_logging()
+logger = setup_logging()
 
 ##################################################################################################################################
 

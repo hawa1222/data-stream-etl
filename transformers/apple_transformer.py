@@ -36,19 +36,10 @@ Usage:
 # Import the required libraries
 import os  # For operating system related functionality
 import pandas as pd  # For data manipulation and analysis
-import logging  # For logging information and debugging
 import pytz
 from pandas import DataFrame
 from typing import Dict
 
-
-# =============================================================================
-# import sys  # For Python interpreter control
-# # Configuration
-# sys.dont_write_bytecode = True  # Prevent Python from writing bytecode files (.pyc)
-# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
-# 
-# =============================================================================
 # Custom imports
 from constants import FileDirectory, AppleHealth
 from config import Settings
@@ -60,7 +51,7 @@ from utility.logging import setup_logging
 from utility.utils import generate_filename
 
 # Initialize logging
-setup_logging()
+logger = setup_logging()
 
 ##################################################################################################################################
 # Function to Process 'ActivitySummary' in the DataFrame Dictionary
@@ -71,7 +62,7 @@ def process_activity_summary(df):
     """
     
     # Log that we are starting to transform 'ActivitySummary'
-    logging.info("Transforming ActivitySummary")
+    logger.info("Transforming ActivitySummary")
 
     # Create a copy of the 'ActivitySummary' DataFrame
     df_copy = df.copy()
@@ -164,7 +155,7 @@ def process_record(df):
             # Drop duplicates based on 'startDate' and 'endDate'
             #preview_tables[var_name] = filtered_df.drop_duplicates(subset=['start_date', 'end_date'])
         else:
-            logging.info(f"The specified type '{elem}' does not exist in the DataFrame.")
+            logger.info(f"The specified type '{elem}' does not exist in the DataFrame.")
 
     return preview_tables
 
@@ -257,7 +248,7 @@ def transform_record_dicts(record_dict: Dict[str, DataFrame]) -> Dict[str, DataF
         # Initialise an empty dictionary for aggregation
         agg_dict = {}
 
-        logging.info(f'Transforming {df_name}')
+        logger.info(f'Transforming {df_name}')
 
         # For each unique data point, keep data for only one source
         new_df = subset_by_priority(new_df)
@@ -312,7 +303,7 @@ def join_data_by_group(complete_dict):
 
         # If DataFrame is empty or key is not in configuration, skip to next iteration
         if df_a.empty or key not in merger_logic:
-            logging.info(f"Skipping key {key} because it is empty or not in the configuration.")
+            logger.info(f"Skipping key {key} because it is empty or not in the configuration.")
             continue
         
         # Fetch group name from all_df_dict
@@ -328,7 +319,7 @@ def join_data_by_group(complete_dict):
             )
 
     # Log the keys in the joined_data_by_group dictionary
-    logging.info(f"Keys in joined_data_by_group after processing: {joined_data_by_group.keys()}")
+    logger.info(f"Keys in joined_data_by_group after processing: {joined_data_by_group.keys()}")
 
     return joined_data_by_group
 

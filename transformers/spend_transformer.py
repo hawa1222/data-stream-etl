@@ -35,15 +35,7 @@ Note:
 
 # Import the required libraries
 import os  # For operating system related functionality
-import logging  # For logging information and debugging
 import pandas as pd
-
-# =============================================================================
-# import sys  # For Python interpreter control
-# # Configuration
-# sys.dont_write_bytecode = True  # Prevent Python from writing bytecode files (.pyc)
-# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
-# =============================================================================
 
 # Custom imports
 from constants import FileDirectory, Spend
@@ -55,7 +47,7 @@ from utility.logging import setup_logging
 from utility.utils import generate_filename
 
 # Setting up logging
-setup_logging()
+logger = setup_logging()
 
 #############################################################################################
 
@@ -84,7 +76,7 @@ def clean_data(df):
         # Convert 'date' column to datetime format
         new_df[Spend.DATE] = pd.to_datetime(new_df[Spend.DATE]).dt.strftime(Settings.DATE_FORMAT)
 
-    logging.info("Cleaned Spend data")
+    logger.info("Cleaned Spend data")
 
     return new_df
 

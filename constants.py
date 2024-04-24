@@ -5,13 +5,6 @@ Constants required for Project
 import os
 import textwrap
 
-# =============================================================================
-# import sys
-# # Configuration
-# sys.dont_write_bytecode = True  # Prevent Python from writing bytecode files (.pyc)
-# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
-# =============================================================================
-
 #############################################################################################
     
 class FileDirectory:
@@ -136,7 +129,6 @@ class Daylio:
     
     MOOD_DATA = 'daylio_mood.xlsx'
     ACTIVITY_DATA = 'daylio_activities.xlsx'
-    ACTIVITY_LIST_DATA = 'daylio_activities_list.xlsx'
     
     DOCUMEMTATION_DATA = 'daylio_data_documentation.xlsx'
 
@@ -146,8 +138,6 @@ class Daylio:
     TIME = 'time'
     DATE_TIME = 'date_time'
     ACTIVITY = 'activities'
-    ACTIVITY_ID = 'activity_id'
-    ACTIVITY_NAME = 'activity_name'
 
     CLEAN_FIELDS = ['date_time', 'mood', 'note_title', 'note', ACTIVITY]
 
@@ -197,8 +187,6 @@ class StravaAPI:
     DETAIL_CACHE_FILE = 'strava_detail_cache.xlsx'
     FINAL_DATA = 'strava_data.xlsx'
     
-    SPORT_DATA = 'strava_sport_type.xlsx'
-    GEAR_DATA = 'strava_gear.xlsx'
     ACTIVITY_DATA = 'strava_activity.xlsx'
     PERFORMANCE_DATA = 'strava_performance_metrics.xlsx'
     
@@ -220,29 +208,32 @@ class StravaAPI:
     ITEMS_PER_PAGE = 50
 
     # Fields
-    ID = 'id'
+    LEGACY_ACT_ID = 'id'
     ACTIVITY_ID = 'activity_id'
+
+    LEGACY_ACT_NAME = 'name'
+    ACTIVITY_NAME = 'activity_name'
+
     DATE = 'start_date'
     SPORT = 'sport_type'
-    SPORT_ID = 'sport_type_id'
-    SPORT_TEXT = 'Workout'
-    SPORT_TEXT_NEW ='Martial Arts'
     MOVE_TIME = 'moving_time'
     ELAP_TIME = 'elapsed_time'
     LEGACY_GEAR = 'name_2'
     GEAR_NAME = 'gear_name'
-    GEAR_ID = 'gear_id'
 
-    CLEAN_FIELDS = [ACTIVITY_ID, 'external_id', 'device_name', 'gear_name', 'name', 'sport_type',
-                    'start_date', 'distance', 'moving_time', 'elapsed_time',
+    SPORT_TEXT = 'Workout'
+    SPORT_TEXT_NEW ='Martial Arts'
+
+    CLEAN_FIELDS = [ACTIVITY_ID, 'external_id', 'device_name', GEAR_NAME, ACTIVITY_NAME, SPORT,
+                    DATE, 'distance', MOVE_TIME, ELAP_TIME,
                     'average_speed', 'max_speed', 'elev_high', 'elev_low', 'average_cadence',
                     'average_heartrate', 'max_heartrate', 'calories',
                     'suffer_score', 'private_note', 'polyline']
 
-    ACTIVITY_FIELDS = [ACTIVITY_ID, 'external_id', 'device_name', 'name', 'sport_type_id',
-                       'start_date', 'gear_id', 'private_note', 'polyline']
+    ACTIVITY_FIELDS = [ACTIVITY_ID, 'external_id', 'device_name', ACTIVITY_NAME, SPORT,
+                       'start_date', GEAR_NAME, 'private_note', 'polyline']
 
-    PERFORMANCE_FIELDS = [ACTIVITY_ID, 'distance', 'moving_time', 'elapsed_time',
+    PERFORMANCE_FIELDS = [ACTIVITY_ID, 'distance', MOVE_TIME, ELAP_TIME,
                           'average_speed', 'max_speed', 'average_cadence',
                           'average_heartrate', 'max_heartrate', 'calories',
                           'suffer_score', ]

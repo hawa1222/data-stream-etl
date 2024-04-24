@@ -1,20 +1,13 @@
 # Import the required libraries
 import pandas as pd
 
-# =============================================================================
-# import sys
-# # Add the path to the directory containing utils.py to sys.path
-# sys.dont_write_bytecode = True
-# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
-# =============================================================================
-
 # Custom imports
 from config import DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
 from utility.logging import setup_logging
 from utility.database_handler import DatabaseHandler
 
 # Setting up logging
-setup_logging()
+logger = setup_logging()
 
 ##################################################################################################################################
 

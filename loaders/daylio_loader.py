@@ -27,15 +27,6 @@ Note:
 - It's part of a larger data processing system for managing and analysing Daylio data.
 """
 
-# =============================================================================
-# # Import the required libraries
-# import sys
-# # Configuration
-# sys.dont_write_bytecode = True  # Prevent Python from writing bytecode files (.pyc)
-# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
-# 
-# =============================================================================
-
 # Custom imports
 from constants import FileDirectory, Daylio
 from config import DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
@@ -44,7 +35,7 @@ from utility.logging import setup_logging
 from utility.database_handler import DatabaseHandler
 
 # Initialise logging
-setup_logging()
+logger = setup_logging()
 
 ##################################################################################################################################
 
@@ -60,14 +51,10 @@ def daylio_loader():
             'note_title': 'TEXT',
             'note': 'TEXT'
         }),
-        Daylio.ACTIVITY_LIST_DATA.split('.')[0]: (Daylio.ACTIVITY_LIST_DATA, {
-            'activity_id': 'TINYINT UNSIGNED NOT NULL PRIMARY KEY',
-            'activity_name': 'VARCHAR(50)'
-        }),
         Daylio.ACTIVITY_DATA.split('.')[0]: (Daylio.ACTIVITY_DATA, {
             'id': 'SMALLINT UNSIGNED NOT NULL PRIMARY KEY',
             'date_time': 'TIMESTAMP NOT NULL, FOREIGN KEY (date_time) REFERENCES daylio_mood(date_time)',
-            'activity_id': 'TINYINT UNSIGNED NOT NULL, FOREIGN KEY (activity_id) REFERENCES daylio_activities_list(activity_id)'
+            'activities': 'VARCHAR(50)'
         })
     }
     
@@ -75,6 +62,7 @@ def daylio_loader():
     db_handler = DatabaseHandler(DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME)
 
     # Load data, create tables, and insert data for each dataset
+    # table_name refers to key in datasets dictionary, api_data refers to the file name, fields refers to the schema
     for table_name, (api_data, fields) in datasets.items():
         df = file_manager.load_file(FileDirectory.CLEAN_DATA_PATH, api_data)
         db_handler.create_table(table_name, fields)

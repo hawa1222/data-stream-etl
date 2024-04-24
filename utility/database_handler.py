@@ -1,22 +1,14 @@
 # Import the required libraries
 import mysql.connector
 from mysql.connector import Error
-import logging
 import pandas as pd
-
-
-# =============================================================================
 import sys
-# # Add the path to the directory containing utils.py to sys.path
-# sys.dont_write_bytecode = True
-# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
-# =============================================================================
 
 # Custom imports
 from utility.logging import setup_logging
 
 # Initialise logging
-setup_logging()
+logger = setup_logging()
 
 ##################################################################################################################################
 
@@ -74,11 +66,11 @@ class DatabaseHandler:
             cursor.execute("SET time_zone = '+00:00';")
             cursor.close()
     
-            logging.info("Successfully connected to the database and set time zone to UTC")
+            logger.info("Successfully connected to the database and set time zone to UTC")
             return conn
         except Error as e:
             # Log the error and exit the script if connection fails
-            logging.error("Error while connecting to MySQL: %s", e)
+            logger.error("Error while connecting to MySQL: %s", e)
             sys.exit(1)
 
     def create_table(self, table_name, fields):
@@ -96,27 +88,27 @@ class DatabaseHandler:
                     # Execute a SQL query to check if the table already exists
                     cursor.execute(f"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '{self.connection.database}' AND table_name = '{table_name}'")
                     if cursor.fetchone()[0] == 1:  # Check if the table exists
-                        logging.info(f"Table '{table_name}' already exists")  # Log if table exists
+                        logger.info(f"Table '{table_name}' already exists")  # Log if table exists
                     else:
                         # Generate the SQL query for creating the table
                         create_table_query = self.generate_create_table_query(table_name, fields)
-                        #logging.info(f"Generated SQL for table creation: {create_table_query}")  # Log the SQL command for debugging
+                        #logger.info(f"Generated SQL for table creation: {create_table_query}")  # Log the SQL command for debugging
                         cursor.execute(create_table_query)  # Execute the SQL command to create the table
-                        logging.info(f"Table '{table_name}' created successfully")  # Log successful table creation
+                        logger.info(f"Table '{table_name}' created successfully")  # Log successful table creation
     
                         # Log the details of any foreign keys defined within the column definitions
                         for field, definition in fields.items():
                             if 'FOREIGN KEY' in definition:
                                 # Extract and log the foreign key details from the column definition
                                 fk_detail = definition.split('FOREIGN KEY')[1].strip()
-                                logging.info(f"Foreign key defined '{field}' for table '{table_name}': {fk_detail}")
+                                logger.info(f"Foreign key defined '{field}' for table '{table_name}': {fk_detail}")
     
                 except mysql.connector.ProgrammingError as pe:
-                    logging.error(f"Programming Error during table creation: {pe}")  # Log programming errors
+                    logger.error(f"Programming Error during table creation: {pe}")  # Log programming errors
                 except mysql.connector.IntegrityError as ie:
-                    logging.error(f"Integrity Error during table creation: {ie}")  # Log integrity errors
+                    logger.error(f"Integrity Error during table creation: {ie}")  # Log integrity errors
                 except Error as e:
-                    logging.error(f"General Error during table creation: {e}")  # Log any other errors
+                    logger.error(f"General Error during table creation: {e}")  # Log any other errors
     
     def generate_create_table_query(self, table_name, fields):
         """
@@ -151,14 +143,14 @@ class DatabaseHandler:
                     # First, check if the table exists
                     cursor.execute(f"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '{self.connection.database}' AND table_name = '{table_name}'")
                     if cursor.fetchone()[0] == 0:
-                        logging.info(f"Table '{table_name}' does not exist, no action taken.")
+                        logger.info(f"Table '{table_name}' does not exist, no action taken.")
                     else:
                         # Table exists, proceed to drop it
                         drop_table_query = f"DROP TABLE {table_name};"
                         cursor.execute(drop_table_query)
-                        logging.info(f"Table '{table_name}' dropped successfully")
+                        logger.info(f"Table '{table_name}' dropped successfully")
                 except Error as e:
-                    logging.error(f"Error while dropping table '{table_name}': {e}")
+                    logger.error(f"Error while dropping table '{table_name}': {e}")
 
     def insert_data(self, table_name, data_frame, column_mapping):
         """
@@ -177,7 +169,7 @@ class DatabaseHandler:
                     # Check if the table exists before attempting to insert data
                     cursor.execute(f"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '{self.connection.database}' AND table_name = '{table_name}'")
                     if cursor.fetchone()[0] == 0:
-                        logging.error(f"Failed to insert data: Table '{table_name}' does not exist.")
+                        logger.error(f"Failed to insert data: Table '{table_name}' does not exist.")
                         return  # Exit the function as the table doesn't exist
                     # Initialise counters for added and updated records
                     added_count = 0
@@ -204,16 +196,16 @@ class DatabaseHandler:
                             self.connection.commit()
                         except Error as e:
                             # Log any error that occurs during the insert operation
-                            logging.error("Error on insert at index %d: %s", i, e)
+                            logger.error("Error on insert at index %d: %s", i, e)
                             # Rollback the transaction to revert changes since the last commit
                             self.connection.rollback()
     
                     # Log the number of records added and updated after completing the insertion process
-                    logging.info(f"Data insertion process completed for table '{table_name}': %d records added, %d records updated", added_count, updated_count)
+                    logger.info(f"Data insertion process completed for table '{table_name}': %d records added, %d records updated", added_count, updated_count)
                     
             except Error as e:
                 # Log any error that occurs during the database operation outside the row insertion
-                logging.error("Error during data insertion into table '%s': %s", table_name, e)
+                logger.error("Error during data insertion into table '%s': %s", table_name, e)
                 # Rollback any changes made in the current transaction
                 self.connection.rollback()
 
@@ -264,9 +256,9 @@ class DatabaseHandler:
                     cursor.execute(query)
                     result = cursor.fetchall()
                     dataframes[table] = pd.DataFrame(result)
-                logging.info(f"Data fetched successfully for table: {table}")
+                logger.info(f"Data fetched successfully for table: {table}")
             except Error as e:
-                logging.error(f"Error fetching data from table {table}: {e}")
+                logger.error(f"Error fetching data from table {table}: {e}")
                 dataframes[table] = pd.DataFrame()  # Return an empty DataFrame on error
 
         return dataframes
@@ -281,13 +273,13 @@ class DatabaseHandler:
         if self.connection.is_connected():
             try:
                 self.connection.close()  # Attempt to close the connection
-                logging.info("Database connection closed successfully.")
+                logger.info("Database connection closed successfully.")
             except Error as e:
                 # Log any error that occurs while trying to close the connection
-                logging.error("Error while closing database connection: %s", e)
+                logger.error("Error while closing database connection: %s", e)
         else:
             # If the connection is already closed, log this information
-            logging.info("Database connection is already closed.")
+            logger.info("Database connection is already closed.")
 
 
 

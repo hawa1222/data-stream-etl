@@ -28,15 +28,6 @@ Note:
 - It ensures that Strava data is structured and stored in a relational database for further analysis or reporting.
 """
 
-
-# =============================================================================
-# # Import the required libraries
-# import sys
-# # Configuration
-# sys.dont_write_bytecode = True  # Prevent Python from writing bytecode files (.pyc)
-# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
-# =============================================================================
-
 # Custom imports
 from constants import FileDirectory, StravaAPI
 from config import DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
@@ -45,7 +36,7 @@ from utility.logging import setup_logging
 from utility.database_handler import DatabaseHandler
 
 # Initialise logging
-setup_logging()
+logger = setup_logging()
 
 ##################################################################################################################################
 
@@ -55,8 +46,19 @@ def strava_loader():
 
     # Define Strava datasets and corresponding table fields
     datasets = {
-        StravaAPI.PERFORMANCE_DATA.split('.')[0]: (StravaAPI.PERFORMANCE_DATA, {
+        StravaAPI.ACTIVITY_DATA.split('.')[0]: (StravaAPI.ACTIVITY_DATA, {
             'activity_id': 'BIGINT UNSIGNED NOT NULL PRIMARY KEY',
+            'external_id': 'VARCHAR(100)',
+            'device_name': 'VARCHAR(50)',
+            'activity_name': 'VARCHAR(50)',
+            'sport_type': 'VARCHAR(50)',
+            'start_date': 'TIMESTAMP',
+            'gear_name': 'VARCHAR(50)',
+            'private_note': 'VARCHAR(100)',
+            'polyline': 'TEXT'
+        }),
+        StravaAPI.PERFORMANCE_DATA.split('.')[0]: (StravaAPI.PERFORMANCE_DATA, {
+            'activity_id': 'BIGINT UNSIGNED NOT NULL PRIMARY KEY, FOREIGN KEY (activity_id) REFERENCES strava_activity(activity_id)',
             'distance': 'DECIMAL(6,1)',
             'moving_time': 'DECIMAL(5,2)',
             'elapsed_time': 'DECIMAL(5,2)',
@@ -67,25 +69,6 @@ def strava_loader():
             'max_heartrate': 'TINYINT UNSIGNED',
             'calories': 'DECIMAL(5,1)',
             'suffer_score': 'TINYINT UNSIGNED'
-        }),
-        StravaAPI.SPORT_DATA.split('.')[0]: (StravaAPI.SPORT_DATA, {
-            'sport_type_id': 'TINYINT UNSIGNED NOT NULL PRIMARY KEY',
-            'sport_type': 'VARCHAR(50)'
-        }),
-        StravaAPI.GEAR_DATA.split('.')[0]: (StravaAPI.GEAR_DATA, {
-            'gear_id': 'TINYINT UNSIGNED NOT NULL PRIMARY KEY',
-            'gear_name': 'VARCHAR(50)'
-        }),
-        StravaAPI.ACTIVITY_DATA.split('.')[0]: (StravaAPI.ACTIVITY_DATA, {
-            'activity_id': 'BIGINT UNSIGNED NOT NULL PRIMARY KEY',
-            'external_id': 'VARCHAR(100)',
-            'device_name': 'VARCHAR(50)',
-            'name': 'VARCHAR(50)',
-            'sport_type_id': 'TINYINT UNSIGNED NOT NULL, FOREIGN KEY (sport_type_id) REFERENCES strava_sport_type(sport_type_id)',
-            'start_date': 'TIMESTAMP',
-            'gear_id': 'TINYINT UNSIGNED NULL, FOREIGN KEY (gear_id) REFERENCES strava_gear(gear_id)',
-            'private_note': 'VARCHAR(100)',
-            'polyline': 'TEXT'
         })
     }
     
