@@ -58,14 +58,22 @@ def clean_data(df):
     Returns:
         DataFrame: The cleaned DataFrame.
     """
+
     # Specify the format of your date and time fields
-    date_format = '%Y-%m-%d'  # Date format
-    time_format = '%I:%M %p'  # Time format (12-hour clock with AM/PM)
+    datetime_format = '%Y-%m-%d %I:%M%p'  # Datetime format (e.g., '2024-04-27 8:00PM')
+
+    # Remove the '‚ÄØ' character from the time values
+    df[Daylio.TIME] = df[Daylio.TIME].str.replace('‚ÄØ', '', regex=False)
 
     # Combine date and time into a single string and convert to datetime
-    combined_datetime = df[Daylio.DATE] + ' ' + df[Daylio.TIME].str.upper().str.replace(' ', ' ')
-    df[Daylio.DATE_TIME] = pd.to_datetime(combined_datetime, format=f'{date_format} {time_format}', errors='coerce')
+    combined_datetime = df[Daylio.DATE] + ' ' + df[Daylio.TIME].str.upper().str.replace(r'[^a-zA-Z0-9:\- ]', '', regex=True)
+    # Remove any leading/trailing whitespace from the combined_datetime strings
+    combined_datetime = combined_datetime.str.strip()
+
+    # Convert the combined_datetime strings to datetime objects
+    df[Daylio.DATE_TIME] = pd.to_datetime(combined_datetime, format=datetime_format, errors='coerce')
     df = standardise_dates(df, Daylio.DATE_TIME)  # Standardise the 'date_time' column to a consistent datetime format
+
     df = df.loc[:, Daylio.CLEAN_FIELDS]  # Select only the columns defined in DAYLIO_COLUMNS
     logger.info('Dataframe Cleaned')
     return df  # Return the cleaned DataFrame

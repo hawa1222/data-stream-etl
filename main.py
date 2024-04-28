@@ -1,12 +1,3 @@
-# =============================================================================
-# # Import the required libraries
-# import sys
-# 
-# # Configuration
-# sys.dont_write_bytecode = True  # Prevent Python from writing bytecode files (.pyc)
-# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
-# =============================================================================
-
 # Custom imports
 from extractors.apple_extractor import apple_extractor
 from extractors.daylio_extractor import daylio_extractor
@@ -33,7 +24,6 @@ from validation.post_load_checks import post_load
 # Initialise logging
 from utility.logging import setup_logging
 logger = setup_logging()
-
 
 ##################################################################################################################################
 

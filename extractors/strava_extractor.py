@@ -170,6 +170,7 @@ def get_strava_data(headers):
 
         # Check for rate limiting and handle it if necessary
         if api_error(response.status_code):
+            logger.info("Retrying API request...")
             continue  # Continue to the next iteration of the loop, effectively retrying the API request
 
         # Check if the API response is anything other than HTTP 200
@@ -179,12 +180,15 @@ def get_strava_data(headers):
 
         else:
             # Convert the JSON response to a Python list of dictionaries
+            logger.info("Data fetched successfully.")
             activities = response.json()
             # If the list is empty, it means there are no more activities to fetch
             if not activities:
+                logger.info("No more activities to fetch.")
                 break
 
             all_activities_json.extend(activities)
+            logger.info(f"Total activities fetched: {len(all_activities_json)}")
 
         # Increment the page number for the next API request
         page += 1

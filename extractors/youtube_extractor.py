@@ -85,16 +85,16 @@ def refresh_google_token(token, refresh_token, client_id, client_secret, token_u
     
     # Code for refreshing the credentials if they are expired
     if credentials.expired:
+        logger.info("Refreshing credentials...")
         credentials.refresh(Request())
         # Extract new token details
+        logger.info("Extracting new token details...")
         new_access_token = credentials.token
         new_refresh_token = credentials.refresh_token
         new_token_expiry = credentials.expiry
-        formatted_expiry = new_token_expiry.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
-# =============================================================================
-#         # Format the expiry date in ISO 8601 format
-#         formatted_expiry = new_token_expiry.isoformat()
-# =============================================================================
+        formatted_expiry = ''
+        if new_token_expiry is not None:
+            formatted_expiry = new_token_expiry.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
         logger.info("New access token received.")
         # Update environment variables with new token details
         set_key(FileDirectory.ENV_PATH, 'GOOGLE_ACCESS_TOKEN', str(new_access_token))
@@ -187,7 +187,7 @@ def clean_description(s):
     # Replace URL prefixes
     s = s.replace("http://", "http[://]").replace("https://", "https[://]")
     # Remove invalid characters using regular expressions
-    s = re.sub('[^a-zA-Z0-9\s\[\]\:\-\_\,\.\!\/\@\#\$\%\^\&\*\(\)\+\=\;\:\'\"\?\>\<\~\`]', '', s)
+    s = re.sub(r'[^a-zA-Z0-9\s\[\]\:\-\_\,\.\!\/\@\#\$\%\^\&\*\(\)\+\=\;\:\'\"\?\>\<\~\`]', '', s)
     # Remove non-printable characters
     s = re.sub(r'[^\x20-\x7E]', '', s)
     # Truncate text to fit within Excel's cell limit
