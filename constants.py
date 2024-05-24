@@ -23,7 +23,7 @@ class FileDirectory:
     # Clean Data Folder
     CLEAN_DATA_PATH = os.path.join(ROOT_DIRECTORY, 'data', 'clean_data')
     # Documentation Folder
-    DOCUMENTATION_PATH = os.path.join(ROOT_DIRECTORY, 'documentation')
+    DOCUMENTATION_PATH = os.path.join(ROOT_DIRECTORY, 'documentation/docs')
 
 class AppleHealth:
     """
@@ -75,7 +75,7 @@ class AppleHealth:
     
     # Transformation Logic
     RECORD_TRANSFORMATION_LOGIC = {
-        "AppleWalkingSteadiness": {"timeframe": ["date"], "agg_type": ["Mean"], "fields": ["walking_steadines_pct"], "group": ["walking_metrics"]}, 
+        "AppleWalkingSteadiness": {"timeframe": ["date"], "agg_type": ["Mean"], "fields": ["walking_steadiness_pct"], "group": ["walking_metrics"]}, 
         "BasalEnergyBurned": {"timeframe": ["date"], "agg_type": ["Sum"], "fields": ["basal_energy_kcal"], "group": ["daily_activity"]}, 
         "BloodGlucose": {"timeframe": ["date", "hour"], "agg_type": ["Mean"], "fields": ["avg_blood_glucose_mmol"], "group": ["blood_glucose"]}, 
         "FlightsClimbed": {"timeframe": ["date"], "agg_type": ["Sum"], "fields": ["flight_climbed"], "group": ["daily_activity"]}, 

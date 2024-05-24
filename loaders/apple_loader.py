@@ -49,7 +49,7 @@ def apple_loader():
     field_structures = {
         'apple_walking_metrics': {
             'date': 'DATE NOT NULL PRIMARY KEY',
-            'walking_steadines_pct': 'DECIMAL(5,2)',
+            'walking_steadiness_pct': 'DECIMAL(5,2)',
             'walking_asymm_pct': 'DECIMAL(5,2)',
             'walking_ds_pct': 'DECIMAL(5,2)',
             'walking_avg_HR': 'DECIMAL(5,2)',
