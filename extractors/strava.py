@@ -57,9 +57,9 @@ from config import (
     STRAVA_REFRESH_TOKEN,
 )
 from constants import FileDirectory, StravaAPI
-from utility.cache_data import initialise_cache, update_cache
+from utility import cache
 from utility.file_manager import FileManager
-from utility.logging import setup_logging  # Custom logging setup
+from utility.logging import setup_logging
 from utility.standardise_fields import DataStandardiser
 
 # Initialise logging
@@ -67,12 +67,6 @@ logger = setup_logging()
 
 # Setting up headers for API requests
 StravaAPI.AUTH_HEADER["Authorisation"] = f"Bearer {STRAVA_ACCESS_TOKEN}"
-
-# Estailish connection to Redis
-redis_conn = redis.Redis(host="localhost", port=6379, db=0)
-
-
-#############################################################################################
 
 
 def refresh_access_token(token_url, client_id, client_secret, refresh_token):
@@ -169,63 +163,52 @@ def api_error(status_code, activity_id=None):
     return False
 
 
-#############################################################################################
-
-
-def get_strava_data(headers):
+def get_activity_ids(headers):
     """
     Fetch summary activity data from Strava API.
 
     Parameters:
-        headers (dict): Dictionary containing the Authorisation header.
+        headers (dict): Dictionary containing the Authorization header.
 
     Returns:
-        list: A list containing all summary data in JSON format.
+        set: A set containing unique activity_id values.
     """
+    page = 1
+    all_activity_ids = set()
 
-    page = 1  # Initialise the page number to 1
-    per_page = StravaAPI.ITEMS_PER_PAGE  # Number of items to request per page
-    all_activities_json = []  # Initialise an empty list to store all activities
-
-    # Infinite loop to keep fetching data until a stopping condition is met
     while True:
         logger.info(f"Fetching summary data for page {page}...")
-        # Make an API request to get the activity data
+
         response = requests.get(
             StravaAPI.BASE_URL,
             headers=headers,
-            params={"page": page, "per_page": per_page},
+            params={"page": page, "per_page": StravaAPI.ITEMS_PER_PAGE},
         )
 
-        # Check for rate limiting and handle it if necessary
         if api_error(response.status_code):
             logger.info("Retrying API request...")
-            continue  # Continue to the next iteration of the loop, effectively retrying the API request
+            continue
 
-        # Check if the API response is anything other than HTTP 200
-        elif response.status_code != StravaAPI.HTTP_200_OK:
+        if response.status_code != StravaAPI.HTTP_200_OK:
             logger.error(f"Error fetching summary data: {response.text}")
-            break  # Exit the loop if there's an error
+            break
 
-        else:
-            # Convert the JSON response to a Python list of dictionaries
-            logger.info("Data fetched successfully.")
-            activities = response.json()
-            # If the list is empty, it means there are no more activities to fetch
-            if not activities:
-                logger.info("No more activities to fetch.")
-                break
+        activities = response.json()
 
-            all_activities_json.extend(activities)
-            logger.info(f"Total activities fetched: {len(all_activities_json)}")
+        if not activities:
+            logger.info("No more activities to fetch.")
+            break
 
-        # Increment the page number for the next API request
+        activity_ids = {activity["id"] for activity in activities}
+        all_activity_ids.update(activity_ids)
+
+        logger.info(f"Total unique activity IDs fetched: {len(all_activity_ids)}")
         page += 1
 
-    return all_activities_json
+    return all_activity_ids
 
 
-def get_strava_activity(new_activity_ids, headers):
+def get_activity_data(new_activity_ids, headers):
     """
     Fetch detailed activity data for a list of activities from the Strava API.
 
@@ -258,9 +241,6 @@ def get_strava_activity(new_activity_ids, headers):
     return detailed_data_json
 
 
-#############################################################################################
-
-
 def strava_extractor():
     """
     Main function to extract data from Strava API,
@@ -269,67 +249,25 @@ def strava_extractor():
     Returns:
         tuple: Two DataFrames representing updated summary and detailed data.
     """
-    # Initilaise FileManager Class
+    # Initialise FileManager Class
     file_manager = FileManager()
 
-    # Create an instance of the DataStandardiser class
+    # Create instance of DataStandardiser class
     standardiser = DataStandardiser()
 
-    # Load cached data into DataFrames
-    cached_summary_data = initialise_cache(
-        FileDirectory.RAW_DATA_PATH, StravaAPI.SUMMARY_CACHE_FILE
-    )
-    cached_detailed_data = initialise_cache(
-        FileDirectory.RAW_DATA_PATH, StravaAPI.DETAIL_CACHE_FILE
-    )
+    # Initialise cache and get cached activity IDs from Redis
+    cached_ids = cache.initialise_cache("strava_activity_ids")
 
-    #  Fetch new summary data as JSON
-    new_activities_json = get_strava_data(StravaAPI.AUTH_HEADER)
-    # Convert the JSON to a DataFrame
-    new_activities_df = standardiser.json_normalise(
-        new_activities_json, one_level_above=False
-    )
+    # Fetch all activity IDs
+    all_activity_ids = get_activity_ids(StravaAPI.AUTH_HEADER)
 
-    # Check if the 'id' column exists in the DataFrame and is not empty
-    if (
-        StravaAPI.LEGACY_ACT_ID in cached_summary_data.columns
-        and not cached_summary_data.empty
-    ):
-        cached_ids = set(cached_summary_data[StravaAPI.LEGACY_ACT_ID])
-    else:
-        # If the column doesn't exist or the DataFrame is empty, use an empty set
-        cached_ids = set()
+    # Cache new activity IDs in Redis
+    cache.cach_ids("strava_activity_ids", all_activity_ids)
 
-    # Filter out the new activities
-    new_activity_ids = [
-        activity[StravaAPI.LEGACY_ACT_ID]
-        for activity in new_activities_json
-        if activity[StravaAPI.LEGACY_ACT_ID] not in cached_ids
-    ]
-
-    # Fetch detailed data for new activities as JSON
-    new_detailed_json = get_strava_activity(new_activity_ids, StravaAPI.AUTH_HEADER)
-
-    # Convert the JSON detailed data to a DataFrame
-    new_detailed_df = standardiser.json_normalise(
-        new_detailed_json, one_level_above=True
-    )
-
-    # Update the Excel cache files
-    # updated_summary_data = update_cache(FileDirectory.RAW_DATA_PATH, cached_summary_data, new_activities_df,
-    #                                     StravaAPI.SUMMARY_CACHE_FILE, StravaAPI.LEGACY_ACT_ID)
-    updated_detailed_data = update_cache(
-        FileDirectory.RAW_DATA_PATH,
-        cached_detailed_data,
-        new_detailed_df,
-        StravaAPI.DETAIL_CACHE_FILE,
-        StravaAPI.LEGACY_ACT_ID,
-    )
-
-    # Save the final, updated detailed data to an Excel file
-    file_manager.save_file(
-        FileDirectory.RAW_DATA_PATH, updated_detailed_data, StravaAPI.FINAL_DATA
-    )
+    # Filter out activity_ids not in cache_ids
+    new_activity_ids = all_activity_ids - cached_ids
+    # Fetch activities data for new_activity_ids
+    activity_data = get_activity_data(new_activity_ids, StravaAPI.AUTH_HEADER)
 
 
 if __name__ == "__main__":

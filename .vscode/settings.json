@@ -1,0 +1,8 @@
+{
+    "python.envFile": "/Users/hadid/GitHub/ETL/.env",
+    "python.terminal.executeInFileDir": true,
+    "python.terminal.activateEnvironment": true,
+    "cSpell.words": [
+        "strava"
+    ],
+}
