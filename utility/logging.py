@@ -27,12 +27,7 @@ def setup_logging():
     # Prevent logs from propagating to parent logger
     logger.propagate = False
 
-    # Remove existing handlers, if any
-    """
-    [:] is used to create copy of list of handlers
-    By iterating over copy ([:]), original list's indices are
-    effectively disconnected from loop's progress.
-    """
+    # Remove existing handlers, if any.[:] is used to create copy of list of handlers
     for handler in logger.handlers[:]:
         handler.close()
         logger.removeHandler(handler)
@@ -43,7 +38,7 @@ def setup_logging():
 
     # Create formatter
     formatter = logging.Formatter(
-        "%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+        "[%(asctime)s] [%(levelname)s]  %(message)s", datefmt=Settings.DATETIME_FORMAT
     )
 
     # Create console handler

@@ -57,7 +57,7 @@ from config import (
     STRAVA_REFRESH_TOKEN,
 )
 from constants import FileDirectory, StravaAPI
-from utility.cache_data import initialise_cache, update_cache
+from utility.download_data_local import initialise_cache, update_cache
 from utility.file_manager import FileManager
 from utility.logging import setup_logging  # Custom logging setup
 from utility.standardise_fields import DataStandardiser
@@ -68,7 +68,7 @@ logger = setup_logging()
 # Setting up headers for API requests
 StravaAPI.AUTH_HEADER["Authorisation"] = f"Bearer {STRAVA_ACCESS_TOKEN}"
 
-# Estailish connection to Redis
+# Establish connection to Redis
 redis_conn = redis.Redis(host="localhost", port=6379, db=0)
 
 
@@ -269,7 +269,7 @@ def strava_extractor():
     Returns:
         tuple: Two DataFrames representing updated summary and detailed data.
     """
-    # Initilaise FileManager Class
+    # Initialise FileManager Class
     file_manager = FileManager()
 
     # Create an instance of the DataStandardiser class

@@ -1,82 +1,88 @@
-# Import required libraries
-import pandas as pd  # For data manipulation and analysis
-import os # For operating system-dependent functionality
+"""
+This module provides utility functions for caching data using Redis.
 
-# Custom imports
-from utility.logging import setup_logging  # Custom logging setup
-from utility.file_manager import FileManager
-# Call the logging setup function to initialise logging
+It includes functions to initialise the cache, update the cache with new data,
+and retrieve cached data based on specific keys.
+"""
+
+import json
+
+import redis
+
+from utility.logging import setup_logging
+
 logger = setup_logging()
 
-#############################################################################################
+# Establish a connection to Redis
+redis_client = redis.Redis(
+    host="localhost", port=6379, db=0, password=None, decode_responses=True
+)
 
-def initialise_cache(file_directory, file_name):
+
+def get_cached_ids(cache_key):
     """
-    Initialise the cache by either loading an existing file or creating a new one empty dataframe
+    Initialise the cache by retrieving the cached data for a given key.
 
-    Parameters:
-        file_directory: Directory for where to load file from.
-        file_name: The name of the cache file.
+    Args:
+        cache_key (str): The key to retrieve the cached data from Redis.
 
     Returns:
-        cached_data: Empty dataframe or with cached data.
+        set: An empty set if the key doesn't exist, or a set containing the cached data.
     """
+    logger.info(f"Fetching cached {cache_key} from Redis...")
 
-    file_manager = FileManager()
+    try:
+        cached_data = redis_client.smembers(cache_key)
+        logger.info(f"Successfully fetched {len(cached_data)} IDs")
+        return {
+            item if isinstance(item, str) else item.decode() for item in cached_data
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving cached data. Error: {str(e)}")
+        return set()
 
-    cache_file = os.path.join(file_directory, file_name)
-    if os.path.exists(cache_file):
-        cached_data = file_manager.load_file(file_directory, file_name)
-        logger.info('Cached data loaded')
-    else:
-        cached_data = pd.DataFrame()
-        logger.info('Cached data created')
-    return cached_data
 
-def update_cache(file_directory, cached_data, new_data, file_name, id_col):
+def cache_ids(cache_key, ids):
     """
-    Update the cache with new data.
+    Update the cache by adding new data to the existing cached data for a given key.
 
-    Parameters:
-        file_directory: Directory for where to save file to.
-        cached_data: Existing dataframe containing cached data.
-        new_data: Dataframe containing new data.
-        file_name: Cache file name.
-        id_col: Name of the column containing IDs in new_data.
+    Args:
+        cache_key (str): The key to update the cached data in Redis.
+        new_data (set): A set containing the new data to be added to the cache.
+    """
+    logger.info(f"Updating cached {cache_key} in Redis...")
+
+    try:
+        redis_client.sadd(cache_key, *ids)
+        logger.info(
+            f"Successfully updated cached {cache_key}, added {len(ids)} new IDs"
+        )
+    except Exception as e:
+        logger.error(f"Error updating cache for key '{cache_key}'. Error: {str(e)}")
+
+
+def cache_data(cache_key, data):
+    """
+    Cache the provided data in Redis using the specified key.
+
+    Args:
+        cache_key (str): The key to store the data in Redis.
+        data (dict): The data to be cached.
+    """
+    redis_client.set(cache_key, json.dumps(data))
+
+
+def get_cached_data(cache_key):
+    """
+    Retrieve the cached data from Redis for a given key.
+
+    Args:
+        cache_key (str): The key to retrieve the cached data from Redis.
 
     Returns:
-        Dataframe with updated cached data.
+        dict: The cached data as a dictionary, or None if the key doesn't exist.
     """
-
-    file_manager = FileManager()
-
-    # If the cache is empty or does not exist, write the entire new_data to it
-    if cached_data.empty:
-        file_manager.save_file(file_directory, new_data, file_name)
-        logger.info('Cached data is empty, new data saved')
-        return new_data
-
-    # Check if new_data is empty; if so, return the existing cached_data
-    if new_data.empty:
-        logger.info('New data is empty, no update needed')
-        return cached_data
-
-    # Create sets of IDs for existing cached_data and new_data
-    cached_data_ids = set(cached_data[id_col])
-    new_data_ids = set(new_data[id_col])
-
-    # Find new IDs that are not in the cache
-    new_ids = new_data_ids - cached_data_ids
-
-    # Filter rows with new IDs from new_data
-    rows_to_add = new_data[new_data[id_col].isin(new_ids)]
-
-    # Append these new rows to the cached_data
-    updated_cached_data = pd.concat([cached_data, rows_to_add], ignore_index=True)
-
-    # Save updated cached data to a file
-    file_manager.save_file(file_directory, updated_cached_data, file_name)
-
-    logger.info('Cached data updated and saved')
-
-    return updated_cached_data
+    cached_data = redis_client.get(cache_key)
+    if cached_data:
+        return json.loads(cached_data)
+    return None

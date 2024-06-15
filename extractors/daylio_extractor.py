@@ -21,7 +21,7 @@ Note:
 """
 
 # Import custom constants and utility functions
-from constants import FileDirectory, Daylio
+from constants import Daylio, FileDirectory
 from utility.file_manager import FileManager
 from utility.logging import setup_logging  # Custom logging setup
 
@@ -30,15 +30,18 @@ logger = setup_logging()
 
 #############################################################################################
 
+
 def daylio_extractor():
     """
     Load & Standardise Daylio Data
     """
-    # Initilaise FileManager Class
+    # Initialise FileManager Class
     file_manager = FileManager()
 
     # Load youtube HTML file from iCloud
-    daylio_data = file_manager.load_file(FileDirectory.MANUAL_EXPORT_PATH, Daylio.RAW_DATA)
+    daylio_data = file_manager.load_file(
+        FileDirectory.MANUAL_EXPORT_PATH, Daylio.RAW_DATA
+    )
 
     # Save Data
     file_manager.save_file(FileDirectory.RAW_DATA_PATH, daylio_data, Daylio.CLEAN_DATA)

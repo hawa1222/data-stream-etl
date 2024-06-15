@@ -36,9 +36,9 @@ DB_NAME = os.environ.get("MYSQL_DATABASE")
 
 
 class Settings:
-
-    TIMESTAMP = "%y-%m-%dT%H"
     TIMEZONE = "Europe/London"
+    TIMESTAMP = "%y-%m-%dT%H"
     DATE_FORMAT = "%Y-%m-%d"
-    # Logging level
+    DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+
     LOGGING_LEVEL = "INFO"

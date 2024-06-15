@@ -1,5 +1,5 @@
 """
-This script is responsible for transforming and cleaning YouTube data obtained from various sources, 
+This script is responsible for transforming and cleaning YouTube data obtained from various sources,
 including channel data, likes data, and subscriptions data. It also updates cached data and documents the transformations.
 
 Key Processes:
@@ -29,25 +29,28 @@ Note:
 
 # Import standard libraries
 import os  # For interacting with the operating system
-import pandas as pd  # For data manipulation and analysis
-import numpy as np  # For numerical operations
 
-# Import custom utility classes and functions
-from utility.logging import setup_logging  # For setting up logging
-from utility.file_manager import FileManager  # For file management tasks
-from utility.standardise_dates import standardise_dates  # For standardising date formats
-from utility.cache_data import update_cache  # For updating cached data
-from utility.documentation import DataFrameDocumenter  # For documenting data frames
-from utility.utils import format_data_name
-from utility.utils import generate_filename
+import numpy as np  # For numerical operations
+import pandas as pd  # For data manipulation and analysis
 
 # Import constants
 from constants import FileDirectory, Youtube
+from utility.documentation import DataFrameDocumenter  # For documenting data frames
+from utility.download_data_local import update_cache  # For updating cached data
+from utility.file_manager import FileManager  # For file management tasks
+
+# Import custom utility classes and functions
+from utility.logging import setup_logging  # For setting up logging
+from utility.standardise_dates import (
+    standardise_dates,  # For standardising date formats
+)
+from utility.utils import format_data_name, generate_filename
 
 # Initialise logging
 logger = setup_logging()
 
 #############################################################################################
+
 
 def get_best_url(row):
     """
@@ -60,10 +63,17 @@ def get_best_url(row):
     - str/np.nan: The best available URL or np.nan if none found.
     """
     # Loop through URL types in a specified order to find the best available URL
-    for url_type in ['maxres_url', 'standard_url', 'high_url', 'medium_url', 'default_url']:
+    for url_type in [
+        "maxres_url",
+        "standard_url",
+        "high_url",
+        "medium_url",
+        "default_url",
+    ]:
         if pd.notna(row.get(url_type)):
             return row[url_type]
     return np.nan  # Return np.nan if no URL is found
+
 
 # Loads, cleans and saves data. Returns raw df, and clean df
 def process_and_save_data(file_manager, file_name, columns_needed, new_name_dict={}):
@@ -78,7 +88,7 @@ def process_and_save_data(file_manager, file_name, columns_needed, new_name_dict
     Returns:
     - pandas.DataFrame, pandas.DataFrame: The original data and the processed data.
     """
-    logger.info(f'Processing {file_name}')
+    logger.info(f"Processing {file_name}")
 
     # Load the raw data from the specified Excel file
     data = file_manager.load_file(FileDirectory.RAW_DATA_PATH, file_name)
@@ -109,7 +119,9 @@ def process_and_save_data(file_manager, file_name, columns_needed, new_name_dict
 
     return data_copy, data_updated  # Return the original and processed data
 
+
 #############################################################################################
+
 
 def youtube_transformer():
     """
@@ -126,33 +138,58 @@ def youtube_transformer():
     file_manager = FileManager()
 
     # Columns to keep for 'Channel' data and process it
-    channel_data, channel_data_updated = process_and_save_data(file_manager, Youtube.CHANNEL_DATA, Youtube.CHANNEL_FIELDS)
+    channel_data, channel_data_updated = process_and_save_data(
+        file_manager, Youtube.CHANNEL_DATA, Youtube.CHANNEL_FIELDS
+    )
 
     # Columns to keep for 'Likes' data and process it
-    likes_data, likes_data_updated = process_and_save_data(file_manager, Youtube.CACHE_LIKES_DATA, Youtube.LIKES_FIELDS, {Youtube.LEGACY_VID_ID: Youtube.VID_ID})
+    likes_data, likes_data_updated = process_and_save_data(
+        file_manager,
+        Youtube.CACHE_LIKES_DATA,
+        Youtube.LIKES_FIELDS,
+        {Youtube.LEGACY_VID_ID: Youtube.VID_ID},
+    )
 
     # Columns to keep for 'Subscriptions' data and process it
-    subs_data, subs_data_updated = process_and_save_data(file_manager, Youtube.SUBS_DATA, Youtube.SUBS_FIELDS)
+    subs_data, subs_data_updated = process_and_save_data(
+        file_manager, Youtube.SUBS_DATA, Youtube.SUBS_FIELDS
+    )
 
     # Load raw & cleaned HTML data
-    parsed_html = file_manager.load_file(FileDirectory.RAW_DATA_PATH, Youtube.PARSED_HTML_DATA)
-    clean_html = file_manager.load_file(FileDirectory.CLEAN_DATA_PATH, Youtube.CLEAN_PLAYLIST_DATA)
+    parsed_html = file_manager.load_file(
+        FileDirectory.RAW_DATA_PATH, Youtube.PARSED_HTML_DATA
+    )
+    clean_html = file_manager.load_file(
+        FileDirectory.CLEAN_DATA_PATH, Youtube.CLEAN_PLAYLIST_DATA
+    )
 
     # Update the cached 'Likes & Dislikes' data
-    updated_playlist_data = update_cache(FileDirectory.CLEAN_DATA_PATH, likes_data_updated, clean_html, Youtube.CLEAN_PLAYLIST_DATA, Youtube.VID_ID)
+    updated_playlist_data = update_cache(
+        FileDirectory.CLEAN_DATA_PATH,
+        likes_data_updated,
+        clean_html,
+        Youtube.CLEAN_PLAYLIST_DATA,
+        Youtube.VID_ID,
+    )
 
     # Define the path for Excel documentation
-    doc_path = os.path.join(FileDirectory.DOCUMENTATION_PATH, generate_filename(Youtube.DOCUMENTATION_DATA))
+    doc_path = os.path.join(
+        FileDirectory.DOCUMENTATION_PATH, generate_filename(Youtube.DOCUMENTATION_DATA)
+    )
 
     # Define the data frames to document and their corresponding names
     data_frames = {
-        'raw': {format_data_name(Youtube.CHANNEL_DATA): channel_data,
-                format_data_name(Youtube.CACHE_LIKES_DATA): likes_data,
-                format_data_name(Youtube.PARSED_HTML_DATA): parsed_html,
-                format_data_name(Youtube.SUBS_DATA): subs_data},
-        'clean': {format_data_name(Youtube.CHANNEL_DATA): channel_data_updated,
-                  format_data_name(Youtube.CLEAN_PLAYLIST_DATA): updated_playlist_data,
-                  format_data_name(Youtube.SUBS_DATA): subs_data_updated}
+        "raw": {
+            format_data_name(Youtube.CHANNEL_DATA): channel_data,
+            format_data_name(Youtube.CACHE_LIKES_DATA): likes_data,
+            format_data_name(Youtube.PARSED_HTML_DATA): parsed_html,
+            format_data_name(Youtube.SUBS_DATA): subs_data,
+        },
+        "clean": {
+            format_data_name(Youtube.CHANNEL_DATA): channel_data_updated,
+            format_data_name(Youtube.CLEAN_PLAYLIST_DATA): updated_playlist_data,
+            format_data_name(Youtube.SUBS_DATA): subs_data_updated,
+        },
     }
 
     # Initialise the DataFrameDocumenter class
@@ -166,6 +203,6 @@ def youtube_transformer():
     # Save the documentation Excel file
     documenter.save()
 
+
 if __name__ == "__main__":
     youtube_transformer()
-

@@ -30,31 +30,45 @@ Note:
 # Import standard libraries
 import re  # For regular expressions
 from importlib import reload  # For reloading modules
+
 from dotenv import set_key  # For setting environment variables
+from google.auth.transport.requests import (
+    Request,  # For making HTTP requests in the Google Auth process
+)
 
 # Import Google API libraries
 from google.oauth2.credentials import Credentials  # For managing OAuth2 credentials
-from google.auth.transport.requests import Request  # For making HTTP requests in the Google Auth process
 from googleapiclient.discovery import build  # For building the Google API client
-
-# Import custom utility modules
-from utility.logging import setup_logging  # Custom logging setup
-from utility.file_manager import FileManager  # Custom file management
-from utility.standardise_fields import DataStandardiser  # Custom data standardisation
-from utility.cache_data import initialise_cache, update_cache  # Custom cache initialisation and updating
 
 # Import custom configuration and constants
 import config  # Custom configuration
-from config import (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_ACCESS_TOKEN,
-                    GOOGLE_REFRESH_TOKEN, GOOGLE_TOKEN_EXPIRY)
+from config import (
+    GOOGLE_ACCESS_TOKEN,
+    GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET,
+    GOOGLE_REFRESH_TOKEN,
+    GOOGLE_TOKEN_EXPIRY,
+)
 from constants import FileDirectory, Youtube
+from utility.download_data_local import (  # Custom cache initialisation and updating
+    initialise_cache,
+    update_cache,
+)
+from utility.file_manager import FileManager  # Custom file management
+
+# Import custom utility modules
+from utility.logging import setup_logging  # Custom logging setup
+from utility.standardise_fields import DataStandardiser  # Custom data standardisation
 
 # Initialise logging
 logger = setup_logging()
 
 #############################################################################################
 
-def refresh_google_token(token, refresh_token, client_id, client_secret, token_url, expiry):
+
+def refresh_google_token(
+    token, refresh_token, client_id, client_secret, token_url, expiry
+):
     """
     Refreshes Google OAuth2 credentials using a refresh token.
 
@@ -78,11 +92,11 @@ def refresh_google_token(token, refresh_token, client_id, client_secret, token_u
             "refresh_token": refresh_token,
             "token_url": token_url,
             "token": token,
-            'expiry': expiry
+            "expiry": expiry,
         },
-        scopes=Youtube.SCOPES
+        scopes=Youtube.SCOPES,
     )
-    
+
     # Code for refreshing the credentials if they are expired
     if credentials.expired:
         logger.info("Refreshing credentials...")
@@ -92,24 +106,29 @@ def refresh_google_token(token, refresh_token, client_id, client_secret, token_u
         new_access_token = credentials.token
         new_refresh_token = credentials.refresh_token
         new_token_expiry = credentials.expiry
-        formatted_expiry = ''
+        formatted_expiry = ""
         if new_token_expiry is not None:
-            formatted_expiry = new_token_expiry.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+            formatted_expiry = (
+                new_token_expiry.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+            )
         logger.info("New access token received.")
         # Update environment variables with new token details
-        set_key(FileDirectory.ENV_PATH, 'GOOGLE_ACCESS_TOKEN', str(new_access_token))
-        set_key(FileDirectory.ENV_PATH, 'GOOGLE_TOKEN_EXPIRY', formatted_expiry)
+        set_key(FileDirectory.ENV_PATH, "GOOGLE_ACCESS_TOKEN", str(new_access_token))
+        set_key(FileDirectory.ENV_PATH, "GOOGLE_TOKEN_EXPIRY", formatted_expiry)
         # If a new refresh token is received, update it
         if new_refresh_token != refresh_token:
-            set_key(FileDirectory.ENV_PATH, 'GOOGLE_REFRESH_TOKEN', str(new_refresh_token))
+            set_key(
+                FileDirectory.ENV_PATH, "GOOGLE_REFRESH_TOKEN", str(new_refresh_token)
+            )
             logger.info("New refresh token received.")
     else:
-        logger.info('Credentials are still valid')
+        logger.info("Credentials are still valid")
 
     # Reload the config to update environment variables
     reload(config)
 
     return credentials
+
 
 def youtube_api(credentials, api_type, params, max_pages=200):
     """
@@ -135,10 +154,10 @@ def youtube_api(credentials, api_type, params, max_pages=200):
         if page >= max_pages:
             break
         # Build the YouTube API client
-        youtube = build('youtube', 'v3', credentials=credentials)
+        youtube = build("youtube", "v3", credentials=credentials)
         # Set next page token for pagination
         if next_page_token:
-            params['pageToken'] = next_page_token
+            params["pageToken"] = next_page_token
         # Dynamically fetch the correct API function
         api_function = getattr(youtube, api_type)().list(**params)
         # Make the API call and fetch the response
@@ -172,6 +191,7 @@ def youtube_api(credentials, api_type, params, max_pages=200):
 
     return api_data_df
 
+
 def clean_description(s):
     """
     Cleans and sanitises a string, particularly for Excel compatibility.
@@ -187,21 +207,27 @@ def clean_description(s):
     # Replace URL prefixes
     s = s.replace("http://", "http[://]").replace("https://", "https[://]")
     # Remove invalid characters using regular expressions
-    s = re.sub(r'[^a-zA-Z0-9\s\[\]\:\-\_\,\.\!\/\@\#\$\%\^\&\*\(\)\+\=\;\:\'\"\?\>\<\~\`]', '', s)
+    s = re.sub(
+        r"[^a-zA-Z0-9\s\[\]\:\-\_\,\.\!\/\@\#\$\%\^\&\*\(\)\+\=\;\:\'\"\?\>\<\~\`]",
+        "",
+        s,
+    )
     # Remove non-printable characters
-    s = re.sub(r'[^\x20-\x7E]', '', s)
+    s = re.sub(r"[^\x20-\x7E]", "", s)
     # Truncate text to fit within Excel's cell limit
     if len(s) > 32767:
         s = s[:32767]
     # Handle Excel-specific character quirks
-    if s.startswith('='):
+    if s.startswith("="):
         s = "'" + s
     # Replace line breaks for readability
-    s = s.replace('\n', ', ').replace('\r', ', ')
+    s = s.replace("\n", ", ").replace("\r", ", ")
 
     return s
 
+
 #############################################################################################
+
 
 # Main function for extracting data
 def youtube_extractor():
@@ -215,38 +241,61 @@ def youtube_extractor():
     Returns:
         None
     """
-    
+
     # Initilaise FileManager Class
     file_manager = FileManager()
 
     # Check if the token is expired and refresh it if necessary
     try:
-        credentials = refresh_google_token(GOOGLE_ACCESS_TOKEN, GOOGLE_REFRESH_TOKEN,
-                                           GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
-                                           Youtube.TOKEN_URL, GOOGLE_TOKEN_EXPIRY)
+        credentials = refresh_google_token(
+            GOOGLE_ACCESS_TOKEN,
+            GOOGLE_REFRESH_TOKEN,
+            GOOGLE_CLIENT_ID,
+            GOOGLE_CLIENT_SECRET,
+            Youtube.TOKEN_URL,
+            GOOGLE_TOKEN_EXPIRY,
+        )
     except Exception as e:
         logger.error("Error refreshing Google API token: {}".format(str(e)))
         return None
 
     # Get the API response for channels
-    channel_response = youtube_api(credentials, Youtube.CHANNEL_API_CALL, Youtube.CHANNEL_API_PARAMS)
+    channel_response = youtube_api(
+        credentials, Youtube.CHANNEL_API_CALL, Youtube.CHANNEL_API_PARAMS
+    )
 
     # Get the API response for playlistItems (liked videos)
-    playlist_response = youtube_api(credentials, Youtube.PLAYLIST_API_CALL, Youtube.LIKES_API_PARAMS)
+    playlist_response = youtube_api(
+        credentials, Youtube.PLAYLIST_API_CALL, Youtube.LIKES_API_PARAMS
+    )
     playlist_response[Youtube.PLAYLIST] = Youtube.PLAYLIST_VALUE[0]
     playlist_response[Youtube.SOURCE] = Youtube.SOURCE_VALUE[0]
-    
+
     # Load & update the cached data
-    likes_cache = initialise_cache(FileDirectory.RAW_DATA_PATH, Youtube.CACHE_LIKES_DATA)
-    updated_likes_cache = update_cache(FileDirectory.RAW_DATA_PATH, likes_cache, playlist_response,
-                                       Youtube.CACHE_LIKES_DATA, Youtube.LEGACY_VID_ID)
+    likes_cache = initialise_cache(
+        FileDirectory.RAW_DATA_PATH, Youtube.CACHE_LIKES_DATA
+    )
+    updated_likes_cache = update_cache(
+        FileDirectory.RAW_DATA_PATH,
+        likes_cache,
+        playlist_response,
+        Youtube.CACHE_LIKES_DATA,
+        Youtube.LEGACY_VID_ID,
+    )
 
     # Get the API response for subscriptions
-    subscription_response = youtube_api(credentials, Youtube.SUBS_API_CALL, Youtube.SUBS_API_PARAMS)
+    subscription_response = youtube_api(
+        credentials, Youtube.SUBS_API_CALL, Youtube.SUBS_API_PARAMS
+    )
 
     # Save API data in Excel format
-    file_manager.save_file(FileDirectory.RAW_DATA_PATH, channel_response, Youtube.CHANNEL_DATA)
-    file_manager.save_file(FileDirectory.RAW_DATA_PATH, subscription_response, Youtube.SUBS_DATA)
+    file_manager.save_file(
+        FileDirectory.RAW_DATA_PATH, channel_response, Youtube.CHANNEL_DATA
+    )
+    file_manager.save_file(
+        FileDirectory.RAW_DATA_PATH, subscription_response, Youtube.SUBS_DATA
+    )
+
 
 # Run the main function
 if __name__ == "__main__":
