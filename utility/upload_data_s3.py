@@ -50,9 +50,7 @@ def post_data_to_s3(data, data_name):
         s3_client.put_object(
             Bucket=bucket_name, Key=s3_object_name, Body=csv_buffer.getvalue()
         )
-        logger.info(
-            f"Succesfully uploaded data to S3 bucket '{bucket_name}' as '{s3_object_name}'"
-        )
+        logger.info(f"Succesfully uploaded data as '{s3_object_name}'")
         return True
 
     except Exception as e:
