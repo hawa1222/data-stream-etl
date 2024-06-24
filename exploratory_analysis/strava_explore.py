@@ -82,5 +82,5 @@ existing_data = pd.read_excel(data_path)
 
 from utility import cache_data
 
-Cache new activity IDs in Redis
+# Cache new activity IDs in Redis
 cache_data.cach_ids("strava_activity_ids", all_activity_ids)

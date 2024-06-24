@@ -26,16 +26,15 @@ def exception_formatter(e, library_name=None):
     """
 
     exception_type = type(e).__name__
-    exception_message = str(e)
     trace = traceback.format_exc()
 
     if library_name == "requests":
-        error_message = f"{exception_type} {e.response.status_code} occurred... \n\n {e.response.text}\n\n"
+        error_message = f"'{exception_type} {e.response.status_code}' occurred...\n\n{e.response.text}\n\n"
         error_message += trace
 
         return error_message
 
-    error_message = f"{exception_type} occurred... \n\n {exception_message}\n\n"
+    error_message = f"'{exception_type}' occurred...\n\n"
     error_message += trace
 
     return error_message

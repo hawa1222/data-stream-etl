@@ -12,7 +12,7 @@ import os
 from dotenv import load_dotenv
 
 # Load environment variables from .env
-load_dotenv()
+load_dotenv(".env_dev")
 
 # Credentials and tokens for Strava AP
 STRAVA_CLIENT_ID = os.environ.get("STRAVA_CLIENT_ID")

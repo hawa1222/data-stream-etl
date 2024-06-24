@@ -16,7 +16,8 @@ class FileDirectory:
     # Project Folder
     ROOT_DIRECTORY = os.path.abspath(os.path.join(os.path.dirname(__file__), "."))
     # ROOT_DIRECTORY = os.getcwd()
-    ENV_PATH = os.path.join(ROOT_DIRECTORY, ".env")
+    ENV_PATH = os.path.join(ROOT_DIRECTORY, ".env_dev")
+
     # Manual Export Folder
     MANUAL_EXPORT_PATH = (
         "/Users/hadid/Library/Mobile Documents/com~apple~CloudDocs/Shared/ETL"
@@ -363,7 +364,7 @@ class APIHandler:
     HTTP_429_RATE_LIMITED = 429
     HTTP_500_SERVER_ERROR = 500
 
-    RATE_LIMIT_SLEEP_TIME = 15 * 60
+    RATE_LIMIT_SLEEP_TIME = 0.01 * 60
     ITEMS_PER_PAGE = 50
 
 

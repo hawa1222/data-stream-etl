@@ -27,21 +27,15 @@ Note:
 - It ensures that YouTube data is extracted, cleaned, and stored for further analysis or reporting.
 """
 
-# Import standard libraries
-import re  # For regular expressions
-from importlib import reload  # For reloading modules
+import re
+from importlib import reload
 
-from dotenv import set_key  # For setting environment variables
-from google.auth.transport.requests import (
-    Request,  # For making HTTP requests in the Google Auth process
-)
+from dotenv import set_key
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
 
-# Import Google API libraries
-from google.oauth2.credentials import Credentials  # For managing OAuth2 credentials
-from googleapiclient.discovery import build  # For building the Google API client
-
-# Import custom configuration and constants
-import config  # Custom configuration
+import config
 from config import (
     GOOGLE_ACCESS_TOKEN,
     GOOGLE_CLIENT_ID,
@@ -50,20 +44,16 @@ from config import (
     GOOGLE_TOKEN_EXPIRY,
 )
 from constants import FileDirectory, Youtube
-from utility.download_data_local import (  # Custom cache initialisation and updating
+from utility.download_data_local import (
     initialise_cache,
     update_cache,
 )
-from utility.file_manager import FileManager  # Custom file management
-
-# Import custom utility modules
-from utility.logging import setup_logging  # Custom logging setup
-from utility.standardise_fields import DataStandardiser  # Custom data standardisation
+from utility.file_manager import FileManager
+from utility.logging import setup_logging
+from utility.standardise_fields import DataStandardiser
 
 # Initialise logging
 logger = setup_logging()
-
-#############################################################################################
 
 
 def refresh_google_token(
@@ -226,9 +216,6 @@ def clean_description(s):
     return s
 
 
-#############################################################################################
-
-
 # Main function for extracting data
 def youtube_extractor():
     """
@@ -242,7 +229,7 @@ def youtube_extractor():
         None
     """
 
-    # Initilaise FileManager Class
+    # Initialise FileManager Class
     file_manager = FileManager()
 
     # Check if the token is expired and refresh it if necessary

@@ -13,6 +13,8 @@ __pycache__/
 
 # Environments
 .env
+.env_dev
+.env_prod
 .venv
 env/
 venv/
