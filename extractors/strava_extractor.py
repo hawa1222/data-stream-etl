@@ -266,7 +266,7 @@ def strava_extractor():
             )
 
             # Cache new activity IDs in Redis
-            cache_data.cache_ids("strava_activity_ids", new_activity_ids)
+            cache_data.update_cached_ids("strava_activity_ids", new_activity_ids)
         else:
             logger.info("No new activities found in Strava API")
 

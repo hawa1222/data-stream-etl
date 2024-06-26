@@ -1,48 +1,10 @@
-"""
-This script is responsible for extracting data from the YouTube API, particularly channel, playlist, and subscription data.
-It also performs data cleaning and token refreshing as needed.
-
-Key Processes:
-1. YouTube API Data Extraction:
-   - Calls the YouTube API to fetch data based on specified API types and parameters.
-   - Handles pagination to retrieve multiple pages of data.
-
-2. Data Cleaning:
-   - Cleans and sanitises the fetched data, ensuring compatibility with Excel and handling special characters.
-   - Applies text cleaning to the description column.
-
-3. Token Refreshing:
-   - Checks if the Google OAuth2 token is expired and refreshes it if necessary.
-
-4. Data Saving:
-   - Saves the extracted and cleaned data in Excel format.
-
-Usage:
-- Execute this script as the main module to extract YouTube data using the YouTube API.
-- Ensure that Google OAuth2 credentials and tokens are correctly configured.
-- The script assumes that the token needs to be refreshed when it's expired.
-
-Note:
-- This script is part of a larger data processing system for managing YouTube data.
-- It ensures that YouTube data is extracted, cleaned, and stored for further analysis or reporting.
-"""
-
+import os
 import re
-from importlib import reload
 
-from dotenv import set_key
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 
-import config
-from config import (
-    GOOGLE_ACCESS_TOKEN,
-    GOOGLE_CLIENT_ID,
-    GOOGLE_CLIENT_SECRET,
-    GOOGLE_REFRESH_TOKEN,
-    GOOGLE_TOKEN_EXPIRY,
-)
 from constants import FileDirectory, Youtube
 from utility.download_data_local import (
     initialise_cache,
@@ -56,68 +18,28 @@ from utility.standardise_fields import DataStandardiser
 logger = setup_logging()
 
 
-def refresh_google_token(
-    token, refresh_token, client_id, client_secret, token_url, expiry
-):
-    """
-    Refreshes Google OAuth2 credentials using a refresh token.
+token_file = os.path.join(FileDirectory.ROOT_DIRECTORY, "credentials/google/token.json")
 
-    Parameters:
-    - token (str): The existing access token.
-    - refresh_token (str): The refresh token for obtaining new access tokens.
-    - client_id (str): The client ID from Google Developer Console.
-    - client_secret (str): The client secret from Google Developer Console.
-    - token_url (str): The token URI for Google's OAuth2.
-    - expiry (str): The expiry time for the current access token.
 
-    Returns:
-    - Credentials: The updated Google OAuth2 credentials.
-    """
-    # Check if credentials need refreshing
-    logger.info("Checking if credentials need refreshing...")
-    credentials = Credentials.from_authorized_user_info(
-        {
-            "client_id": client_id,
-            "client_secret": client_secret,
-            "refresh_token": refresh_token,
-            "token_url": token_url,
-            "token": token,
-            "expiry": expiry,
-        },
-        scopes=Youtube.SCOPES,
-    )
+def refresh_token():
+    logger.info("Checking if token needs refreshing...")
 
-    # Code for refreshing the credentials if they are expired
-    if credentials.expired:
-        logger.info("Refreshing credentials...")
-        credentials.refresh(Request())
-        # Extract new token details
-        logger.info("Extracting new token details...")
-        new_access_token = credentials.token
-        new_refresh_token = credentials.refresh_token
-        new_token_expiry = credentials.expiry
-        formatted_expiry = ""
-        if new_token_expiry is not None:
-            formatted_expiry = (
-                new_token_expiry.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
-            )
-        logger.info("New access token received.")
-        # Update environment variables with new token details
-        set_key(FileDirectory.ENV_PATH, "GOOGLE_ACCESS_TOKEN", str(new_access_token))
-        set_key(FileDirectory.ENV_PATH, "GOOGLE_TOKEN_EXPIRY", formatted_expiry)
-        # If a new refresh token is received, update it
-        if new_refresh_token != refresh_token:
-            set_key(
-                FileDirectory.ENV_PATH, "GOOGLE_REFRESH_TOKEN", str(new_refresh_token)
-            )
-            logger.info("New refresh token received.")
+    creds = Credentials.from_authorized_user_file(token_file, Youtube.SCOPES)
+
+    if creds.expired:
+        logger.info("Token has expired. Refreshing token...")
+        creds.refresh(Request())
+        logger.info("Successfully refreshed token")
+
+        # Save the credentials for the next run
+        with open(token_file, "w") as token:
+            token.write(creds.to_json())
+            logger.info("Successfully saved new credentials to token.json")
+
     else:
-        logger.info("Credentials are still valid")
+        logger.info("Token is still valid. No need to refresh")
 
-    # Reload the config to update environment variables
-    reload(config)
-
-    return credentials
+    return creds
 
 
 def youtube_api(credentials, api_type, params, max_pages=200):
@@ -165,7 +87,7 @@ def youtube_api(credentials, api_type, params, max_pages=200):
         page += 1
         # Fetch the next page token for pagination
         next_page_token = api_response.get("nextPageToken")
-        logger.info(f"Fetched page {page} data for {api_type}.")
+        logger.info(f"Fetched page {page} data for {api_type}")
 
         # Break if no more pages
         if next_page_token is None:
@@ -177,7 +99,7 @@ def youtube_api(credentials, api_type, params, max_pages=200):
 
     # Apply text cleaning to description column
     api_data_df[Youtube.DESC] = api_data_df[Youtube.DESC].apply(clean_description)
-    logger.info(f"Cleaned description column for {api_type}.")
+    logger.info(f"Cleaned description column for {api_type}")
 
     return api_data_df
 
@@ -232,19 +154,7 @@ def youtube_extractor():
     # Initialise FileManager Class
     file_manager = FileManager()
 
-    # Check if the token is expired and refresh it if necessary
-    try:
-        credentials = refresh_google_token(
-            GOOGLE_ACCESS_TOKEN,
-            GOOGLE_REFRESH_TOKEN,
-            GOOGLE_CLIENT_ID,
-            GOOGLE_CLIENT_SECRET,
-            Youtube.TOKEN_URL,
-            GOOGLE_TOKEN_EXPIRY,
-        )
-    except Exception as e:
-        logger.error("Error refreshing Google API token: {}".format(str(e)))
-        return None
+    credentials = refresh_token()
 
     # Get the API response for channels
     channel_response = youtube_api(

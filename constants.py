@@ -492,6 +492,7 @@ class Youtube:
 
     # API Parameters
     TOKEN_URL = "https://oauth2.googleapis.com/token"
+
     SCOPES = [
         "https://www.googleapis.com/auth/youtube.readonly",
         "https://www.googleapis.com/auth/youtube",

@@ -13,12 +13,12 @@ s3_client = boto3.client("s3")
 bucket_name = "etl-5h3gn2wqhzfd"
 
 
-def post_data_to_s3(data, data_name):
+def post_data_to_s3(data, data_name, overwrite=False):
     """
     Upload data to an S3 bucket with a structured prefix
 
     :param data: Data to upload (pandas DataFrame)
-    :param data_name: Name of the data source
+    :param data_name: Name of data source
     :return: True if data was uploaded, else False
     """
     logger.info(
@@ -26,27 +26,31 @@ def post_data_to_s3(data, data_name):
     )
 
     try:
-        # Check if the DataFrame is empty
+        # Check if DataFrame is empty
         if data.empty:
             logger.warning(f"DataFrame '{data_name}' is empty. Upload aborted.")
             return False
 
-        # Get the current date and time
+        # Get current date and time
         current_datetime = datetime.now()
 
-        # Create the S3 object prefix with the data source name
+        # Create S3 object prefix with data source name
         s3_prefix = f"{data_name.split('_')[0]}/"
 
-        # Create the S3 object name with the data source name, date, and time
-        s3_object_name = f"{s3_prefix}{data_name}_{current_datetime.strftime('%Y-%m-%d_%H-%M-%S')}.csv"
+        if overwrite:
+            # Create S3 object name with data source name
+            s3_object_name = f"{s3_prefix}{data_name}.csv"
+        else:
+            # Create S3 object name with data source name, date, and time
+            s3_object_name = f"{s3_prefix}{data_name}_{current_datetime.strftime('%Y-%m-%d_%H-%M-%S')}.csv"
 
-        # Create a BytesIO object to store the DataFrame data
+        # Create a BytesIO object to store DataFrame data
         csv_buffer = BytesIO()
 
-        # Write the DataFrame to the BytesIO object as CSV
+        # Write DataFrame to BytesIO object as CSV
         data.to_csv(csv_buffer, index=False)
 
-        # Upload the DataFrame to S3
+        # Upload DataFrame to S3
         s3_client.put_object(
             Bucket=bucket_name, Key=s3_object_name, Body=csv_buffer.getvalue()
         )

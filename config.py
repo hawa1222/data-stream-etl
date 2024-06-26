@@ -20,12 +20,12 @@ STRAVA_CLIENT_SECRET = os.environ.get("STRAVA_CLIENT_SECRET")
 STRAVA_ACCESS_TOKEN = os.environ.get("STRAVA_ACCESS_TOKEN")
 STRAVA_REFRESH_TOKEN = os.environ.get("STRAVA_REFRESH_TOKEN")
 
-# Credentials and tokens for Google AP
-GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
-GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
-GOOGLE_ACCESS_TOKEN = os.environ.get("GOOGLE_ACCESS_TOKEN")
-GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN")
-GOOGLE_TOKEN_EXPIRY = os.environ.get("GOOGLE_TOKEN_EXPIRY")
+# # Credentials and tokens for Google AP
+# GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
+# GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
+# GOOGLE_ACCESS_TOKEN = os.environ.get("GOOGLE_ACCESS_TOKEN")
+# GOOGLE_REFRESH_TOKEN = os.environ.get("GOOGLE_REFRESH_TOKEN")
+# GOOGLE_TOKEN_EXPIRY = datetime.fromisoformat(os.environ.get("GOOGLE_TOKEN_EXPIRY"))
 
 # Database settings
 DB_HOST = os.environ.get("MYSQL_HOST", "localhost")
