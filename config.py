@@ -41,4 +41,7 @@ class Settings:
     DATE_FORMAT = "%Y-%m-%d"
     DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
-    LOGGING_LEVEL = "INFO"
+    LOGGING_LEVEL = "DEBUG"
+
+    RATE_LIMIT_SLEEP_TIME = 15 * 60
+    ITEMS_PER_PAGE = 50

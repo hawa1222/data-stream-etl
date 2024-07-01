@@ -364,7 +364,7 @@ class APIHandler:
     HTTP_429_RATE_LIMITED = 429
     HTTP_500_SERVER_ERROR = 500
 
-    RATE_LIMIT_SLEEP_TIME = 0.01 * 60
+    RATE_LIMIT_SLEEP_TIME = 15 * 60
     ITEMS_PER_PAGE = 50
 
 
@@ -474,15 +474,18 @@ class StravaAPI:
         """)
 
 
-class Youtube:
+class Google:
     """
     Constants specific to Google API.
     """
 
     # File Names
-    RAW_HTML_DATA = "youtube_activity.html"
+    RAW_HTML_DATA = "MyActivity.html"
     PARSED_HTML_DATA = "youtube_activity.xlsx"
 
+    TOKEN_FILE = os.path.join(
+        FileDirectory.ROOT_DIRECTORY, "credentials/google/token.json"
+    )
     CLEAN_PLAYLIST_DATA = "youtube_likes_dislikes.xlsx"
     CHANNEL_DATA = "youtube_channel.xlsx"
     CACHE_LIKES_DATA = "youtube_likes.xlsx"
@@ -501,20 +504,39 @@ class Youtube:
     CHANNEL_API_CALL = "channels"
     PLAYLIST_API_CALL = "playlistItems"
     SUBS_API_CALL = "subscriptions"
-    CHANNEL_API_PARAMS = {"mine": True, "part": "id,snippet"}
-    LIKES_API_PARAMS = {
-        "playlistId": "LLjCBfi9gMp0tFlaDzDiu_iQ",
-        "part": "snippet",
-        "maxResults": 50,
+    MAX_RESULTS = 50
+    API_CONFIG = {
+        "channels": {
+            "api_endpoint": "channels",
+            "parameters": {
+                "id": "UCjCBfi9gMp0tFlaDzDiu_iQ",
+                # "mine": True,
+                "part": "snippet",
+                "maxResults": MAX_RESULTS,
+            },
+        },
+        "subs": {
+            "api_endpoint": "subscriptions",
+            "parameters": {"mine": True, "part": "snippet", "maxResults": MAX_RESULTS},
+        },
+        "likes": {
+            "api_endpoint": "playlistItems",
+            "parameters": {
+                "playlistId": "LLjCBfi9gMp0tFlaDzDiu_iQ",
+                "part": "snippet",
+                "maxResults": MAX_RESULTS,
+            },
+        },
     }
-    SUBS_API_PARAMS = {"part": "snippet,contentDetails", "mine": True, "maxResults": 50}
 
     # Fields
     DESC = "description"
     DATE = "published_at"
     THUMBNAIL = "thumbnail_url"
     PLAYLIST = "playlist"
-    PLAYLIST_VALUE = ["Liked", "Disliked"]
+
+    ACTIVITY_TYPES = ["Liked", "Disliked", "Subscribed", "Voted", "Saved"]
+
     SOURCE = "source"
     SOURCE_VALUE = ["API", "HTML"]
     LEGACY_VID_ID = "resource_id_video_id"

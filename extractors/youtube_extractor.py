@@ -1,199 +1,208 @@
-import os
-import re
-
+import pandas as pd
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
-from constants import FileDirectory, Youtube
-from utility.download_data_local import (
-    initialise_cache,
-    update_cache,
-)
+from constants import FileDirectory, Google
+from utility import cache_data, upload_data_s3
 from utility.file_manager import FileManager
 from utility.logging import setup_logging
-from utility.standardise_fields import DataStandardiser
 
-# Initialise logging
 logger = setup_logging()
 
 
-token_file = os.path.join(FileDirectory.ROOT_DIRECTORY, "credentials/google/token.json")
-
-
-def refresh_token():
-    logger.info("Checking if token needs refreshing...")
-
-    creds = Credentials.from_authorized_user_file(token_file, Youtube.SCOPES)
-
-    if creds.expired:
-        logger.info("Token has expired. Refreshing token...")
-        creds.refresh(Request())
-        logger.info("Successfully refreshed token")
-
-        # Save the credentials for the next run
-        with open(token_file, "w") as token:
-            token.write(creds.to_json())
-            logger.info("Successfully saved new credentials to token.json")
-
-    else:
-        logger.info("Token is still valid. No need to refresh")
-
-    return creds
-
-
-def youtube_api(credentials, api_type, params, max_pages=200):
+class YouTubeExtractor:
     """
-    Fetches data from the YouTube API based on the type of API and parameters.
+    Handles YouTube data extraction using YouTube Data API.
 
-    Parameters:
-    - credentials (Credentials): The Google OAuth2 credentials.
-    - api_type (str): The type of YouTube API to call ('playlistItems', 'channels', etc.).
-    - params (dict): Parameters to pass into the API call.
-    - max_pages (int): The maximum number of API pages to fetch.
+    Manages API authentication, token refreshing, and data extraction
+    for YouTube API endpoints.
 
-    Returns:
-    - DataFrame: A DataFrame containing the standardised API response data.
+    Attributes:
+        token_file: Path to token file for API authentication.
+        scopes: List of API scopes required for authentication.
+        max_pages: Maximum number of pages to fetch from API.
+        credentials: OAuth 2.0 credentials.
+        youtube: YouTube API service object.
     """
-    # Initialise data container and pagination variables
-    api_data = []
-    next_page_token = None
-    page = 0
 
-    # Loop for pagination through API
-    while True:
-        # Break if maximum number of pages reached
-        if page >= max_pages:
-            break
-        # Build the YouTube API client
-        youtube = build("youtube", "v3", credentials=credentials)
-        # Set next page token for pagination
-        if next_page_token:
-            params["pageToken"] = next_page_token
-        # Dynamically fetch the correct API function
-        api_function = getattr(youtube, api_type)().list(**params)
-        # Make the API call and fetch the response
+    def __init__(self, token_file, scopes, max_pages):
+        """
+        Initialises YouTubeExtractor with token file, scopes, and max pages.
+        """
+        self.token_file = token_file
+        self.scopes = scopes
+        self.max_pages = max_pages
+
         try:
-            api_response = api_function.execute()
+            self.credentials = self._refresh_token()
+            self.youtube = build("youtube", "v3", credentials=self.credentials)
         except Exception as e:
-            logger.error(f"An error occurred: {e}")
-            break
+            logger.error(f"Failed to initialise YouTubeExtractor: {str(e)}")
+            raise
 
-        # Loop through each item in the API response to extract details
-        for item in api_response.get("items", []):
-            api_data.append(item)
+    def _refresh_token(self):
+        """
+        Refreshes OAuth 2.0 token if necessary.
 
-        # Increase the page counter
-        page += 1
-        # Fetch the next page token for pagination
-        next_page_token = api_response.get("nextPageToken")
-        logger.info(f"Fetched page {page} data for {api_type}")
+        Returns:
+            Refreshed credentials.
 
-        # Break if no more pages
-        if next_page_token is None:
-            break
+        Raises:
+            FileNotFoundError: If token file is not found.
+            IOError: If there's an error reading or writing token file.
+        """
+        logger.info("Checking if API token needs refreshing...")
 
-    # Standardise the fetched API data into a DataFrame
-    standardiser = DataStandardiser()
-    api_data_df = standardiser.json_normalise(api_data, one_level_above=True)
+        try:
+            creds = Credentials.from_authorized_user_file(self.token_file, self.scopes)
+            if creds.expired and creds.refresh_token:
+                logger.warning("Token has expired. Refreshing token...")
+                creds.refresh(Request())
+                logger.info("Successfully refreshed token")
+                with open(self.token_file, "w") as token:
+                    token.write(creds.to_json())
+                    logger.info("Successfully saved new credentials to token.json")
+            else:
+                logger.info("Token is still valid. No need to refresh")
+            return creds
+        except FileNotFoundError:
+            logger.error(f"Token file not found: {self.token_file}")
+            raise
+        except IOError as e:
+            logger.error(f"Error reading or writing token file: {e}")
+            raise
 
-    # Apply text cleaning to description column
-    api_data_df[Youtube.DESC] = api_data_df[Youtube.DESC].apply(clean_description)
-    logger.info(f"Cleaned description column for {api_type}")
+    def _api_call(self, api_endpoint, params):
+        """
+        Makes paginated API calls to YouTube Data API.
 
-    return api_data_df
+        Args:
+            api_endpoint: Type of API call (e.g., 'channels', 'playlistItems').
+            params: Parameters for API call (e.g., 'part', 'id').
+
+        Returns:
+            List of items returned by API.
+
+        Raises:
+            HttpError: If there's an error with API request.
+            Exception: If there's an unexpected error.
+        """
+        items = []
+        next_page_token = None
+        for page in range(self.max_pages):
+            try:
+                if next_page_token:
+                    params["pageToken"] = next_page_token
+                response = (
+                    getattr(self.youtube, api_endpoint)().list(**params).execute()
+                )
+                items.extend(response.get("items", []))
+                next_page_token = response.get("nextPageToken")
+                logger.info(f"Fetched page {page + 1} of {api_endpoint} data")
+                if not next_page_token:
+                    break
+            except HttpError as e:
+                logger.error(f"An HTTP error occurred: {e}")
+                raise
+            except Exception as e:
+                logger.error(f"An error occurred: {e}")
+                raise
+        return items
+
+    def extract_data(self, config):
+        """Extracts data from specific YouTube API endpoint.
+
+        Args:
+            config: Configuration for API call, including endpoint and parameters.
+
+        Returns:
+            List of raw data entries from API.
+
+        Raises:
+            RuntimeError: If API call fails or returns unexpected data.
+            Exception: If there's an unexpected error.
+        """
+        api_endpoint = config["api_endpoint"]
+        params = config["parameters"]
+
+        logger.info(f"Fetching YouTube API data from {api_endpoint} endpoint...")
+        try:
+            raw_data = self._api_call(api_endpoint, params)
+            if not raw_data:
+                error_message = f"No data returned from {api_endpoint} endpoint"
+                logger.error(error_message)
+                raise RuntimeError(error_message)
+            logger.info(f"Successfully fetched {len(raw_data)} total entries")
+            return raw_data
+        except Exception as e:
+            error_message = (
+                f"Error occured extracting data from {api_endpoint} endpoint: {str(e)}"
+            )
+            logger.error(error_message)
+            raise Exception(error_message)
 
 
-def clean_description(s):
+def clean_desc(df, field_name):
     """
-    Cleans and sanitises a string, particularly for Excel compatibility.
+    Cleans description field in DataFrame.
 
-    Parameters:
-    - s (str): The string to be cleaned.
+    Replaces "http://" and "https://" with "http[://]" and "https[://]" respectively.
+    Adds single quote "'" to beginning of string if it starts with "=".
+
+    Args:
+        df: DataFrame to clean.
+        field_name: name of field to clean.
 
     Returns:
-    - str: The cleaned string.
+        cleaned DataFrame.
     """
-    # Convert to string just in case
-    s = str(s)
-    # Replace URL prefixes
-    s = s.replace("http://", "http[://]").replace("https://", "https[://]")
-    # Remove invalid characters using regular expressions
-    s = re.sub(
-        r"[^a-zA-Z0-9\s\[\]\:\-\_\,\.\!\/\@\#\$\%\^\&\*\(\)\+\=\;\:\'\"\?\>\<\~\`]",
-        "",
-        s,
+    df[field_name] = (
+        df[field_name]
+        .str.replace("http://", "http[://]")
+        .str.replace("https://", "https[://]")
     )
-    # Remove non-printable characters
-    s = re.sub(r"[^\x20-\x7E]", "", s)
-    # Truncate text to fit within Excel's cell limit
-    if len(s) > 32767:
-        s = s[:32767]
-    # Handle Excel-specific character quirks
-    if s.startswith("="):
-        s = "'" + s
-    # Replace line breaks for readability
-    s = s.replace("\n", ", ").replace("\r", ", ")
+    df[field_name] = df[field_name].apply(lambda s: "'" + s if s.startswith("=") else s)
 
-    return s
+    return df
 
 
-# Main function for extracting data
 def youtube_extractor():
     """
-    Main function for extracting data from the Google API. This function fetches channel, playlist,
-    and subscription data from YouTube API, refreshes the Google OAuth2 token if needed, and saves the data.
-
-    Parameters:
-        None
-
-    Returns:
-        None
+    Main function to fetch YouTube data, update cache, and save data to S3,
+    and local storage.
     """
+    logger.info("!!!!!!!!!!!! youtube_extractor.py !!!!!!!!!!!")
 
-    # Initialise FileManager Class
-    file_manager = FileManager()
+    try:
+        file_manager = FileManager()
+        extractor = YouTubeExtractor(Google.TOKEN_FILE, Google.SCOPES, max_pages=200)
 
-    credentials = refresh_token()
+        for data_name, config in Google.API_CONFIG.items():
+            cache_key = f"youtube_{data_name}"
 
-    # Get the API response for channels
-    channel_response = youtube_api(
-        credentials, Youtube.CHANNEL_API_CALL, Youtube.CHANNEL_API_PARAMS
-    )
-
-    # Get the API response for playlistItems (liked videos)
-    playlist_response = youtube_api(
-        credentials, Youtube.PLAYLIST_API_CALL, Youtube.LIKES_API_PARAMS
-    )
-    playlist_response[Youtube.PLAYLIST] = Youtube.PLAYLIST_VALUE[0]
-    playlist_response[Youtube.SOURCE] = Youtube.SOURCE_VALUE[0]
-
-    # Load & update the cached data
-    likes_cache = initialise_cache(
-        FileDirectory.RAW_DATA_PATH, Youtube.CACHE_LIKES_DATA
-    )
-    updated_likes_cache = update_cache(
-        FileDirectory.RAW_DATA_PATH,
-        likes_cache,
-        playlist_response,
-        Youtube.CACHE_LIKES_DATA,
-        Youtube.LEGACY_VID_ID,
-    )
-
-    # Get the API response for subscriptions
-    subscription_response = youtube_api(
-        credentials, Youtube.SUBS_API_CALL, Youtube.SUBS_API_PARAMS
-    )
-
-    # Save API data in Excel format
-    file_manager.save_file(
-        FileDirectory.RAW_DATA_PATH, channel_response, Youtube.CHANNEL_DATA
-    )
-    file_manager.save_file(
-        FileDirectory.RAW_DATA_PATH, subscription_response, Youtube.SUBS_DATA
-    )
+            cached_data = cache_data.get_cached_data(cache_key)
+            if cached_data is not None:
+                raw_data = cached_data
+                logger.info(f"Successfully fetched {len(raw_data)} total entries")
+            else:
+                raw_data = extractor.extract_data(config)
+                cache_data.update_cached_data(cache_key, raw_data)
+                normalised_data = pd.json_normalize(raw_data)
+                if data_name == "likes":
+                    raw_data = clean_desc(normalised_data, "snippet.description")
+                upload_data_s3.post_data_to_s3(
+                    normalised_data, cache_key, overwrite=True
+                )
+                file_manager.save_file(
+                    FileDirectory.RAW_DATA_PATH,
+                    normalised_data,
+                    cache_key + "_data.xlsx",
+                )
+    except Exception as e:
+        logger.error(f"Error occurred fetching YouTube data: {str(e)}")
 
 
-# Run the main function
 if __name__ == "__main__":
     youtube_extractor()

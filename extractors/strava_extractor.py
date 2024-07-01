@@ -144,13 +144,13 @@ def api_error_handler(status_code, activity_id=None):
 
 def get_activity_ids(headers):
     """
-    Fetch all activity ids from Strava API.
+    Fetch all activity IDs from Strava API.
 
     Args:
         headers: Dictionary containing Authorisation header.
 
     Returns:
-        set: A set containing all unique activity_id values.
+        set: set containing all unique activity_id values.
     """
 
     current_datetime = datetime.now().strftime(Settings.DATETIME_FORMAT)
@@ -165,7 +165,7 @@ def get_activity_ids(headers):
         response = requests.get(
             StravaAPI.BASE_URL,
             headers=headers,
-            params={"page": page, "per_page": APIHandler.ITEMS_PER_PAGE},
+            params={"page": page, "per_page": Settings.ITEMS_PER_PAGE},
         )
         if response.status_code != APIHandler.HTTP_200_OK:
             api_error_handler(response.status_code)
@@ -182,7 +182,7 @@ def get_activity_ids(headers):
         logger.info(f"Fetched page {page} of activity_ids")
         page += 1
 
-        if len(activities) < APIHandler.ITEMS_PER_PAGE:
+        if len(activities) < Settings.ITEMS_PER_PAGE:
             break  # Exit loop if less than 50 activities on page
 
     logger.info(f"Successfully fetched {len(all_activity_ids)} activity IDs")
@@ -234,6 +234,8 @@ def strava_extractor():
     isolate new activity IDs, fetch detailed data for new activities, flatten JSON data,
     save data to S3, update local copy, and add new activity IDs to cache.
     """
+    logger.info("!!!!!!!!!!!! strava_extractor.py !!!!!!!!!!!")
+
     try:
         # Initialise cache and get cached activity IDs from Redis
         cached_ids = cache_data.get_cached_ids("strava_activity_ids")
