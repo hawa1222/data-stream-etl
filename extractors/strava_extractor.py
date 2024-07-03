@@ -16,7 +16,7 @@ from config import (
     Settings,
 )
 from constants import APIHandler, FileDirectory, StravaAPI
-from utility import cache_data, download_data_local, upload_data_s3
+from utility import cache_data, download_data_local, standardise_data, upload_data_s3
 from utility.logging import setup_logging
 from utility.utils import exception_formatter
 
@@ -65,14 +65,14 @@ def refresh_access_token(token_url, client_id, client_secret, refresh_token):
         logger.info("Successfully updated access_token")
 
         auth_headers["Authorization"] = f"Bearer {new_access_token}"
-        logger.info("Succesfully updated authisation_header")
+        logger.info("Succesfully updated authorisation header")
 
         new_refresh_token = json_response.get("refresh_token", refresh_token)
         if new_refresh_token != refresh_token:
             set_key(FileDirectory.ENV_PATH, "STRAVA_REFRESH_TOKEN", new_refresh_token)
             logger.info("Successfully updated refresh_token")
 
-        reload(config)
+        reload(config)  # Reload config to update access token
 
         return True
 
@@ -237,35 +237,33 @@ def strava_extractor():
     logger.info("!!!!!!!!!!!! strava_extractor.py !!!!!!!!!!!")
 
     try:
-        # Initialise cache and get cached activity IDs from Redis
-        cached_ids = cache_data.get_cached_ids("strava_activity_ids")
+        cached_ids = cache_data.get_cached_ids(
+            "strava_activity_ids"
+        )  # Fetch cached IDs
+        all_activity_ids = get_activity_ids(auth_headers)  # Fetch all activity IDs
+        new_activity_ids = all_activity_ids - cached_ids  # Filter out new activity IDs
 
-        # Fetch all activity IDs
-        all_activity_ids = get_activity_ids(auth_headers)
-
-        # Filter out activity_ids not in cache_ids
-        new_activity_ids = all_activity_ids - cached_ids
-
-        if len(new_activity_ids) > 0:
+        if len(new_activity_ids) > 0:  # Check if new activities found
             logger.info(
                 f"{len(new_activity_ids)} new activity IDs found in Strava API Data: {new_activity_ids}"
             )
-
             # Fetch activities data for new_activity_ids
             new_activity_data = get_activity_data(new_activity_ids, auth_headers)
 
-            # Flatten JSON data intoDataFrame
-            new_activity_data_df = pd.json_normalize(new_activity_data)
+            new_activity_data_df = pd.json_normalize(
+                new_activity_data
+            )  # Flatten JSON data
+            new_activity_data_df = standardise_data.CleanData.clean_data(
+                new_activity_data_df, na_threshold=20
+            )  # Standardise data
 
-            # Save data to S3
+            # Upload data to S3
             upload_data_s3.post_data_to_s3(new_activity_data_df, "strava_activity_data")
-
-            # Update local copy
             download_data_local.update_local_data(
                 FileDirectory.RAW_DATA_PATH,
                 StravaAPI.COMPLETE_DATA,
                 new_activity_data_df,
-            )
+            )  # Update local data
 
             # Cache new activity IDs in Redis
             cache_data.update_cached_ids("strava_activity_ids", new_activity_ids)

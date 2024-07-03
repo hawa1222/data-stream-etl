@@ -8,6 +8,7 @@ and retrieve cached data based on specific keys.
 import json
 from datetime import datetime, timedelta
 
+import pandas as pd
 import redis
 
 from utility.logging import setup_logging
@@ -90,6 +91,15 @@ def get_cached_data(cache_key):
         return None
 
 
+class JSONEncoder(json.JSONEncoder):
+    """Custom JSON encoder that converts Timestamps to strings."""
+
+    def default(self, obj):
+        if isinstance(obj, (datetime, pd.Timestamp)):
+            return obj.isoformat()  # Convert datetime to string
+        return json.JSONEncoder.default(self, obj)
+
+
 def update_cached_data(cache_key, data):
     logger.info(f"Updating '{cache_key}' cache in Redis...")
     """
@@ -99,8 +109,15 @@ def update_cached_data(cache_key, data):
     :param data: Data to be cached
     """
     try:
+        if isinstance(data, pd.DataFrame):
+            data = data.to_dict(orient="records")
+
         cache_data = {"timestamp": datetime.now().isoformat(), "data": data}
-        redis_client.setex(cache_key, timedelta(hours=48), json.dumps(cache_data))
+        redis_client.setex(
+            cache_key,
+            timedelta(hours=48),
+            json.dumps(cache_data, cls=JSONEncoder, indent=2),
+        )
         logger.info(f"Succesfully updated cache, {len(data)} total entries")
 
     except Exception as e:

@@ -51,6 +51,7 @@ def parse_date(date_string):
             continue
 
     logger.error(f"Error parsing date '{date_string}")
+
     return None
 
 
@@ -70,33 +71,34 @@ def extract_activities(soup):
 
     for div in soup.find_all(
         "div", class_="content-cell mdl-cell mdl-cell--6-col mdl-typography--body-1"
-    ):
-        text = div.get_text(strip=True)
-        date = div.contents[-1].strip()
+    ):  # Find all activity divs
+        text = div.get_text(strip=True)  # Get text from div
+        date = div.contents[-1].strip()  # Get date from last element in div
 
         for activity_type in Google.ACTIVITY_TYPES:
+            # Check if text starts with predefined activity types (e.g. "Liked", "Disliked", etc.)
             if text.startswith(activity_type):
                 activity = {
                     "activity_type": activity_type,
                     "date": parse_date(date),
-                }
+                }  # Create activity dictionary with type and date
 
-                for link in div.find_all("a"):
-                    url = link.get("href", "")
-                    text = link.text.strip()
+                for link in div.find_all("a"):  # Find all links in div
+                    url = link.get("href", "")  # Get link URL
+                    text = link.text.strip()  # Get link text
 
-                    if "youtube.com/channel" in url:
+                    if "youtube.com/channel" in url:  # Check if channel URL
                         activity["channel_name"] = (
                             text if not text.startswith("http") else ""
-                        )
-                        activity["channel_url"] = url
+                        )  # Add channel name if text is not URL
+                        activity["channel_url"] = url  # Add channel URL
                     else:
                         activity["content_title"] = (
                             text if not text.startswith("http") else ""
-                        )
-                        activity["content_url"] = url
+                        )  # Add content title if text is not URL
+                        activity["content_url"] = url  # Add content URL
 
-                activities.append(activity)
+                activities.append(activity)  # Add activity to list
                 break
 
         else:
@@ -113,23 +115,27 @@ def youtube_html_extractor():
     logger.info("!!!!!!!!!!!! youtube_html_extractor.py !!!!!!!!!!!")
 
     try:
-        file_manager = FileManager()
+        file_manager = FileManager()  # Initialise FileManager
 
         soup = file_manager.load_file(
             FileDirectory.MANUAL_EXPORT_PATH, Google.RAW_HTML_DATA
-        )
+        )  # Load HTML file
 
-        activities = extract_activities(soup)
-        normalised_data = pd.DataFrame(activities)
+        activities = extract_activities(soup)  # Extract activities from HTML
+        normalised_data = pd.DataFrame(activities)  # Convert to DataFrame
 
-        activity_counts = Counter(normalised_data["activity_type"])
+        activity_counts = Counter(
+            normalised_data["activity_type"]
+        )  # Count activity types
         logger.info(f"Activity types found: {dict(activity_counts)}")
         logger.info(f"{len(normalised_data)} activities extracted from HTML file")
 
-        upload_data_s3.post_data_to_s3(normalised_data, "youtube_html", overwrite=True)
+        upload_data_s3.post_data_to_s3(
+            normalised_data, "youtube_activity", overwrite=True
+        )  # Upload data to S3, overwrite existing data
         file_manager.save_file(
             FileDirectory.RAW_DATA_PATH, normalised_data, Google.PARSED_HTML_DATA
-        )
+        )  # Save data to local file
 
     except Exception as e:
         error_message = f"Error parsing YouTube HTML data: {e}"

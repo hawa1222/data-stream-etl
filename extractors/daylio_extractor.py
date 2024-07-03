@@ -1,50 +1,41 @@
-"""
-This script facilitates the extraction and initial processing of Daylio data.
-
-Key Processes:
-1. FileManager Initialisation:
-   - Creates an instance of the FileManager class to handle file operations.
-
-2. Data Loading:
-   - Loads the Daylio data file (possibly in a raw format) from a specified manual export directory using FileManager.
-
-3. Data Saving:
-   - Saves the loaded Daylio data into a designated directory for raw data, setting it up for future processing stages.
-
-Usage:
-- Designed to be run as the main module, the script invokes the `daylio_extractor` function to extract Daylio data.
-- It's tailored specifically for the initial stage of handling Daylio data, focusing on its extraction and storage in a raw data format.
-
-Note:
-- The script is a part of an ETL (Extract, Transform, Load) pipeline, primarily focusing on the 'Extract' phase. 
-- As of its current state, the script does not include data transformation or standardisation processes.
-"""
-
-# Import custom constants and utility functions
 from constants import Daylio, FileDirectory
+from utility import cache_data, standardise_data, upload_data_s3
 from utility.file_manager import FileManager
-from utility.logging import setup_logging  # Custom logging setup
+from utility.logging import setup_logging
 
-# Initialise logging
 logger = setup_logging()
-
-#############################################################################################
 
 
 def daylio_extractor():
     """
-    Load & Standardise Daylio Data
+    Main function to load Daylio data, cache to Redis, upload to S3, and
+    save local copy.
     """
-    # Initialise FileManager Class
-    file_manager = FileManager()
+    logger.info("!!!!!!!!!!!! daylio_extractor.py !!!!!!!!!!!")
 
-    # Load youtube HTML file from iCloud
-    daylio_data = file_manager.load_file(
-        FileDirectory.MANUAL_EXPORT_PATH, Daylio.RAW_DATA
-    )
+    file_manager = FileManager()  # Initialise FileManager
 
-    # Save Data
-    file_manager.save_file(FileDirectory.RAW_DATA_PATH, daylio_data, Daylio.CLEAN_DATA)
+    cache_key = "daylio_data"  # Define cache key
+
+    cached_data = cache_data.get_cached_data(cache_key)  # Get cached data
+
+    if cached_data is not None:  # Check if cached data exists
+        logger.info(f"Successfully fetched {len(cached_data)} total entries")
+    else:
+        # Load youtube HTML file from iCloud
+        daylio_data = file_manager.load_file(
+            FileDirectory.MANUAL_EXPORT_PATH, Daylio.RAW_DATA
+        )  # Load Daylio data
+
+        # Standardise data
+        daylio_data = standardise_data.CleanData.clean_data(daylio_data, na_threshold=5)
+
+        cache_data.update_cached_data(cache_key, daylio_data)  # Cache new data
+        # Upload data to S3, overwrite existing data
+        upload_data_s3.post_data_to_s3(daylio_data, cache_key, overwrite=True)
+        file_manager.save_file(
+            FileDirectory.RAW_DATA_PATH, daylio_data, Daylio.CLEAN_DATA
+        )  # Save data to local file
 
 
 if __name__ == "__main__":

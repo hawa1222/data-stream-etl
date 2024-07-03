@@ -35,15 +35,16 @@ Note:
 import pandas as pd
 
 # Import custom constants and utility functions
-from constants import FileDirectory, AppleHealth
+from constants import AppleHealth, FileDirectory
 from utility.file_manager import FileManager
-from utility.standardise_fields import DataStandardiser  # Custom data standardisation
 from utility.logging import setup_logging  # Custom logging setup
+from utility.standardise_data import DataStandardiser  # Custom data standardisation
 
 # Initialise logging
 logger = setup_logging()
 
 #############################################################################################
+
 
 def apple_extractor():
     """
@@ -52,9 +53,11 @@ def apple_extractor():
     # Initialise FileManager and DataStandardiser classes
     file_manager = FileManager()
     standardiser = DataStandardiser()
-   
+
     # Load Apple Health XML file
-    apple_data_tree = file_manager.load_file(AppleHealth.APPLE_XML_PATH, AppleHealth.APPLE_XML_DATA)
+    apple_data_tree = file_manager.load_file(
+        AppleHealth.APPLE_XML_PATH, AppleHealth.APPLE_XML_DATA
+    )
 
     # Get the root element of the XML tree
     root = apple_data_tree.getroot()
@@ -79,14 +82,24 @@ def apple_extractor():
     # Subset the DataFrame based on 'type' = AppleHealth.RECORD_TYPES
     record_df = dataframes_dict[AppleHealth.RECORD]
     # Simplify the 'type' by removing 'Identifier'
-    record_df[AppleHealth.TYPE_FIELD] = record_df[AppleHealth.TYPE_FIELD].str.split('Identifier').str[-1]
-    filtered_record_df = record_df[record_df[AppleHealth.TYPE_FIELD].isin(AppleHealth.RECORD_ELEMENTS)]
+    record_df[AppleHealth.TYPE_FIELD] = (
+        record_df[AppleHealth.TYPE_FIELD].str.split("Identifier").str[-1]
+    )
+    filtered_record_df = record_df[
+        record_df[AppleHealth.TYPE_FIELD].isin(AppleHealth.RECORD_ELEMENTS)
+    ]
 
     # Save Data
-    file_manager.save_file(FileDirectory.RAW_DATA_PATH, filtered_record_df, AppleHealth.RECORD_DATA)
-    #file_manager.save_file(FileDirectory.RAW_DATA_PATH, df_part2, AppleHealth.RECORD_DATA_2)
-    file_manager.save_file(FileDirectory.RAW_DATA_PATH, dataframes_dict[AppleHealth.ACTIVITY_ELEMENT], AppleHealth.ACTIVITY_DATA)
+    file_manager.save_file(
+        FileDirectory.RAW_DATA_PATH, filtered_record_df, AppleHealth.RECORD_DATA
+    )
+    # file_manager.save_file(FileDirectory.RAW_DATA_PATH, df_part2, AppleHealth.RECORD_DATA_2)
+    file_manager.save_file(
+        FileDirectory.RAW_DATA_PATH,
+        dataframes_dict[AppleHealth.ACTIVITY_ELEMENT],
+        AppleHealth.ACTIVITY_DATA,
+    )
+
 
 if __name__ == "__main__":
     apple_extractor()
-

@@ -1,60 +1,47 @@
-"""
-This function is responsible for loading and standardising Spend data.
+import pandas as pd
 
-Key Processes:
-1. FileManager Initialisation:
-   - Initialises FileManager for handling file operations.
-
-2. Data Loading:
-   - Loads the raw Spend data from the specified directory.
-   - Assumes that the data is stored in an HTML file.
-
-3. Data Standardisation:
-   - Standardises the fields and structure of the loaded data.
-   - Uses the DataStandardiser class to perform standardisation.
-   - Optionally removes NaN values during standardisation.
-
-4. Data Saving:
-   - Saves the standardised Spend data to a designated location for further processing.
-
-Usage:
-- Executes as the main module to load and standardise Spend data.
-- Prepares the data for subsequent analysis or processing steps.
-
-Note:
-- The script assumes that the data file is in a specific format and that the required directory structure exists.
-- It's part of a larger data processing system for managing and analysing Spend data.
-"""
-
-# Import custom constants and utility functions
 from constants import FileDirectory, Spend
-from utility.file_manager import FileManager  # Import your FileManager class here
-from utility.standardise_fields import DataStandardiser  # Custom data standardisation
-from utility.logging import setup_logging  # Custom logging setup
+from utility import cache_data, standardise_data, upload_data_s3
+from utility.file_manager import FileManager
+from utility.logging import setup_logging
 
-# Initialise logging
 logger = setup_logging()
 
-#############################################################################################
 
 def spend_extractor():
     """
-    Load & Standardise Spend Data
+    Main function to load Spend data, drop NAs, standarise field names, cache to Redis, upload to S3, and
+    save local copy.
     """
-    # Initilaise FileManager Class
-    file_manager = FileManager()
+    logger.info("!!!!!!!!!!!! spend_extractor.py !!!!!!!!!!!")
 
-    # Load youtube HTML file from iCloud
-    spend_data = file_manager.load_file(FileDirectory.MANUAL_EXPORT_PATH,
-                                        Spend.RAW_DATA,  sheet_name=Spend.RAW_SHEET_NAME)
+    file_manager = FileManager()  # Initialise FileManager
 
-    # Standardise the dataframe fields
-    standardiser = DataStandardiser()
-    st_spend_data = standardiser.standardise_df(spend_data, remove_nans='Y')
+    cache_key = "transactions_data"  # Define cache key
 
-    # Save Data
-    file_manager.save_file(FileDirectory.RAW_DATA_PATH, st_spend_data, Spend.CLEAN_DATA)
+    cached_data = cache_data.get_cached_data(cache_key)  # Get cached data
+
+    if cached_data is not None:  # Check if cached data exists
+        spend_data = cached_data
+        spend_data = pd.DataFrame(spend_data)  # Convert to DataFrame
+        logger.info(f"Successfully fetched {len(spend_data)} total entries")
+    else:
+        spend_data = file_manager.load_file(
+            FileDirectory.MANUAL_EXPORT_PATH,
+            Spend.RAW_DATA,
+            sheet_name=Spend.RAW_SHEET_NAME,
+        )  # Load Spend data
+
+        # Standardise data
+        spend_data = standardise_data.CleanData.clean_data(spend_data, na_threshold=3)
+
+        cache_data.update_cached_data(cache_key, spend_data)  # Cache new data
+        # Upload data to S3, overwrite existing data
+        upload_data_s3.post_data_to_s3(spend_data, cache_key, overwrite=True)
+        file_manager.save_file(
+            FileDirectory.RAW_DATA_PATH, spend_data, Spend.CLEAN_DATA
+        )  # Save data to local file
+
 
 if __name__ == "__main__":
     spend_extractor()
-
