@@ -2,29 +2,17 @@ from collections import defaultdict
 
 import pandas as pd
 
-# =============================================================================
-# import sys
-# # Prevent bytecode (.pyc) file generation
-# sys.dont_write_bytecode = True
-# sys.path.append('/Users/hadid/GitHub/ETL')  # Add path to system path
-# =============================================================================
 from constants import FileDirectory
+from utility.clean_data import DataStandardiser
 from utility.file_manager import FileManager
-
-# Import and set up logging
-from utility.logging import setup_logging
-from utility.standardise_data import DataStandardiser
+from utility.log_manager import setup_logging
 
 logger = setup_logging()
 
-##################################################################################################################################
 
 ## Load all Elements
 
-# Initialise FileManager Class
 file_manager = FileManager()
-
-# Load the Apple Health export.xml file from iCloud
 tree = file_manager.load_file(
     FileDirectory.MANUAL_EXPORT_PATH, "apple_health_export/export.xml"
 )
@@ -35,7 +23,6 @@ root = tree.getroot()
 unique_elements = {elem.tag for elem in tree.iter()}
 print("Unique elements in the XML:", unique_elements)
 
-# Initialize an empty dictionary to store unique element-attribute pairs
 unique_structure = {}
 
 
@@ -62,8 +49,6 @@ for path, attrs in unique_structure.items():
     print(f"Path: {path}, Unique Attribute Names: {list(attrs)}")
 
 
-##################################################################################################################################
-
 ## Create dictionary with data from each element (max 100k rows)
 
 # Initialise a defaultdict to hold data for each unique element
@@ -88,8 +73,6 @@ for elem_tag, attrib_list in element_data.items():
 
     print(f"DataFrame for {elem_tag} has been created with {len(df)} rows.")
 
-
-##################################################################################################################################
 
 # Clean WorkoutStatistics
 df = data_frames["WorkoutStatistics"].copy()
@@ -146,6 +129,3 @@ final_df.dropna(axis=1, how="all", inplace=True)
 # Create an instance of the DataStandardiser class
 standardiser = DataStandardiser()
 new_df = standardiser.standardise_df(final_df)
-
-
-##################################################################################################################################

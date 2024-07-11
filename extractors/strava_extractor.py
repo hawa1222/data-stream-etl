@@ -1,4 +1,3 @@
-import sys
 import time
 from datetime import datetime
 from importlib import reload
@@ -15,12 +14,11 @@ from config import (
     STRAVA_REFRESH_TOKEN,
     Settings,
 )
-from constants import APIHandler, FileDirectory, StravaAPI
-from utility import cache_data, download_data_local, standardise_data, upload_data_s3
-from utility.logging import setup_logging
-from utility.utils import exception_formatter
+from constants import APIHandler, FileDirectory, Strava
+from utility import file_manager, redis_manager, s3_manager
+from utility.clean_data import CleanData
+from utility.log_manager import setup_logging
 
-# Initialise logging
 logger = setup_logging()
 
 # Setting up headers for API requests
@@ -31,19 +29,18 @@ def refresh_access_token(token_url, client_id, client_secret, refresh_token):
     """
     Refreshes access token using provided refresh token.
 
-    Args:
+    Parameters:
         token_url: URL endpoint for refreshing access token.
         client_id: Client ID for authentication.
         client_secret: Client secret for authentication.
         refresh_token: Refresh token used to obtain a new access token.
 
     Returns:
-        str: New access token if refresh is successful.
+        bool: True if access token has been refreshed successfully, False otherwise.
 
     Raises:
         HTTPError: If response status code is 4xx or 5xx.
         Exception: If error occurs during access token refresh process.
-
     """
 
     logger.info("Access token expired. Attempting to update access_token...")
@@ -56,7 +53,7 @@ def refresh_access_token(token_url, client_id, client_secret, refresh_token):
     }
 
     try:
-        response = requests.post(token_url, data=payload)
+        response = requests.post(token_url, data=payload)  # Send POST request
         response.raise_for_status()  # Raise exception for 4xx or 5xx status codes
         json_response = response.json()
 
@@ -77,21 +74,19 @@ def refresh_access_token(token_url, client_id, client_secret, refresh_token):
         return True
 
     except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Exiting script due to error: {exception_formatter(e, 'requests')}"
-        )
-        sys.exit(1)  # Exit script if HTTP error occurs
+        logger.error(f"HTTP Error refreshing access_token: {str(e)}")
+        raise
 
     except Exception as e:
-        logger.error(f"Exiting script due to error: {exception_formatter(e)}")
-        sys.exit(1)  # Exit script if error occurs
+        logger.error(f"Error refreshing access_token: {str(e)}")
+        raise
 
 
 def api_error_handler(status_code, activity_id=None):
     """
     Handle rate limits, token expiration and other API errors when interacting with Strava API.
 
-    Args:
+    Parameters:
         status_code: HTTP status code from API response.
         activity_id (optional): Identifier for activity, if available.
 
@@ -103,25 +98,26 @@ def api_error_handler(status_code, activity_id=None):
         HTTPError: If response status code is 4xx or 5xx.
         Exception: If error occurs while handling API error.
     """
+
     logger.warning(f"Error occurred with status code {status_code}")
 
     try:
         if status_code == APIHandler.HTTP_429_RATE_LIMITED:
             logger.warning(
-                f"Rate limit exceeded. Sleeping for {APIHandler.RATE_LIMIT_SLEEP_TIME/60} minutes..."
+                f"Rate limit exceeded. Sleeping for {int(APIHandler.RATE_LIMIT_SLEEP_TIME/60)} minutes..."
             )
-            time.sleep(APIHandler.RATE_LIMIT_SLEEP_TIME)
-            logger.info("Resuming API request after rate limit sleep")
+            time.sleep(APIHandler.RATE_LIMIT_SLEEP_TIME)  # Sleep for 15 minutes
+            logger.info("Retrying request after rate limit sleep")
 
             return True
 
         if status_code == APIHandler.HTTP_401_UNAUTHORISED:
             return refresh_access_token(
-                StravaAPI.TOKEN_URL,
+                Strava.TOKEN_URL,
                 STRAVA_CLIENT_ID,
                 STRAVA_CLIENT_SECRET,
                 STRAVA_REFRESH_TOKEN,
-            )
+            )  # Refresh access token
 
         if status_code == APIHandler.HTTP_404_NOT_FOUND:
             logger.warning(f"Activity {activity_id} not found")
@@ -132,12 +128,12 @@ def api_error_handler(status_code, activity_id=None):
             raise requests.exceptions.HTTPError
 
     except requests.exceptions.HTTPError as e:
-        logger.error(f"Exiting script due to error: {exception_formatter(e)}")
-        sys.exit(1)  # Exit script if HTTP error occurs
+        logger.error(f"HTTP Error handling API error: {str(e)}")
+        raise
 
     except Exception as e:
-        logger.error(f"Exiting script due to error: {exception_formatter(e)}")
-        sys.exit(1)  # Exit script if error occurs
+        logger.error(f"Error handling API error: {str(e)}")
+        raise
 
     return False
 
@@ -146,11 +142,11 @@ def get_activity_ids(headers):
     """
     Fetch all activity IDs from Strava API.
 
-    Args:
+    Parameters:
         headers: Dictionary containing Authorisation header.
 
     Returns:
-        set: set containing all unique activity_id values.
+        set: Set containing all unique activity_id values.
     """
 
     current_datetime = datetime.now().strftime(Settings.DATETIME_FORMAT)
@@ -163,7 +159,7 @@ def get_activity_ids(headers):
 
     while True:
         response = requests.get(
-            StravaAPI.BASE_URL,
+            Strava.BASE_URL,
             headers=headers,
             params={"page": page, "per_page": Settings.ITEMS_PER_PAGE},
         )
@@ -194,7 +190,7 @@ def get_activity_data(new_activity_ids, headers):
     """
     Fetch activity data for a list of activities from the Strava API.
 
-    Args:
+    Parameters:
         new_activity_ids: List of new activity IDs.
         headers: Dictionary containing Authorisation header.
 
@@ -207,8 +203,8 @@ def get_activity_data(new_activity_ids, headers):
     activity_data_json = []
 
     for activity_id in new_activity_ids:
-        while True:
-            url = StravaAPI.ACTIVITY_URL.format(activity_id)
+        while True:  # Retry request if API error occurs
+            url = Strava.ACTIVITY_URL.format(activity_id)
             params = {"include_all_efforts": False}
             response = requests.get(url, headers=headers, params=params, timeout=10)
 
@@ -216,7 +212,7 @@ def get_activity_data(new_activity_ids, headers):
                 api_error_handler(response.status_code, activity_id)
                 continue  # Retry request for same page
 
-            activity_data_json.append(response.json())
+            activity_data_json.append(response.json())  # Append JSON data to list
             logger.info(
                 "Successfully fetched activity data for activity %s",
                 activity_id,
@@ -232,46 +228,38 @@ def strava_extractor():
     """
     Main function to fetch cached activity IDs, extract all activity IDs from Strava API,
     isolate new activity IDs, fetch detailed data for new activities, flatten JSON data,
-    save data to S3, update local copy, and add new activity IDs to cache.
+    save data to S3 and local storage, and add new activity IDs to cache.
     """
     logger.info("!!!!!!!!!!!! strava_extractor.py !!!!!!!!!!!")
 
     try:
-        cached_ids = cache_data.get_cached_ids(
-            "strava_activity_ids"
-        )  # Fetch cached IDs
+        cached_ids = redis_manager.get_cached_ids(Strava.ID_KEY)  # Fetch cached IDs
         all_activity_ids = get_activity_ids(auth_headers)  # Fetch all activity IDs
-        new_activity_ids = all_activity_ids - cached_ids  # Filter out new activity IDs
+        new_activity_ids = all_activity_ids - cached_ids  # Filter new activity IDs
 
         if len(new_activity_ids) > 0:  # Check if new activities found
             logger.info(
                 f"{len(new_activity_ids)} new activity IDs found in Strava API Data: {new_activity_ids}"
             )
-            # Fetch activities data for new_activity_ids
+
             new_activity_data = get_activity_data(new_activity_ids, auth_headers)
 
-            new_activity_data_df = pd.json_normalize(
-                new_activity_data
-            )  # Flatten JSON data
-            new_activity_data_df = standardise_data.CleanData.clean_data(
-                new_activity_data_df, na_threshold=20
-            )  # Standardise data
+            new_activity_data_df = pd.json_normalize(new_activity_data)  # Flatten JSON
+            new_activity_data_df = CleanData.clean_data(new_activity_data_df, 20)
 
-            # Upload data to S3
-            upload_data_s3.post_data_to_s3(new_activity_data_df, "strava_activity_data")
-            download_data_local.update_local_data(
+            # Upload new data to S3, update local copy, and cache new activity IDs
+            s3_manager.post_data_to_s3(Strava.DATA_KEY, new_activity_data_df)
+            file_manager.update_excel(
                 FileDirectory.RAW_DATA_PATH,
-                StravaAPI.COMPLETE_DATA,
+                Strava.DATA_KEY,
                 new_activity_data_df,
-            )  # Update local data
-
-            # Cache new activity IDs in Redis
-            cache_data.update_cached_ids("strava_activity_ids", new_activity_ids)
+            )
+            redis_manager.update_cached_ids(Strava.ID_KEY, new_activity_ids)
         else:
             logger.info("No new activities found in Strava API")
 
     except Exception as e:
-        logger.error(f"{exception_formatter(e)}")
+        logger.error(f"Error occurred in strava_extractor: {str(e)}")
 
 
 if __name__ == "__main__":

@@ -1,8 +1,5 @@
 """
-This module provides utility functions for caching data using Redis.
-
-It includes functions to initialise the cache, update the cache with new data,
-and retrieve cached data based on specific keys.
+Script to connect to Redis and manage caching of data.
 """
 
 import json
@@ -11,21 +8,26 @@ from datetime import datetime, timedelta
 import pandas as pd
 import redis
 
-from utility.logging import setup_logging
+from utility.log_manager import setup_logging
 
 logger = setup_logging()
 
-# Establish a connection to Redis
 redis_client = redis.Redis(
-    host="localhost", port=6379, db=0, password=None, decode_responses=True
-)
+    host="localhost",
+    port=6379,
+    db=0,
+    password=None,
+    decode_responses=True,
+    socket_connect_timeout=10,
+    socket_timeout=10,
+)  # Connect to Redis
 
 
 def get_cached_ids(cache_key):
     """
     Initialise the cache by retrieving the cached data for a given key.
 
-    Args:
+    Parameters:
         cache_key (str): The key to retrieve the cached data from Redis.
 
     Returns:
@@ -48,7 +50,7 @@ def update_cached_ids(cache_key, ids):
     """
     Update the cache by adding new data to the existing cached data for a given key.
 
-    Args:
+    Parameters:
         cache_key (str): The key to update the cached data in Redis.
         new_data (set): A set containing the new data to be added to the cache.
     """
@@ -61,10 +63,7 @@ def update_cached_ids(cache_key, ids):
         logger.error(f"Error updating cached IDs: {str(e)}")
 
 
-expiry_time = 48
-
-
-def get_cached_data(cache_key):
+def get_cached_data(cache_key, expiry_time=48):
     logger.info(f"Fetching '{cache_key}' cache from Redis...")
 
     try:
@@ -92,7 +91,9 @@ def get_cached_data(cache_key):
 
 
 class JSONEncoder(json.JSONEncoder):
-    """Custom JSON encoder that converts Timestamps to strings."""
+    """
+    Custom JSON encoder that converts Timestamps to strings.
+    """
 
     def default(self, obj):
         if isinstance(obj, (datetime, pd.Timestamp)):
@@ -122,3 +123,40 @@ def update_cached_data(cache_key, data):
 
     except Exception as e:
         logger.error(f"Error updating cached data: {str(e)}")
+
+
+def delete_cache_values(key, values):
+    """
+    Delete specific values from a Redis key based on their data type.
+
+    Parameters:
+        redis_client: The Redis client connection.
+        key: The key under which the values are stored.
+        values: The values to be deleted.
+        data_type: Optional. The data type of the key. If not provided, it will be determined.
+    """
+    logger.info(f"Deleting values from key: {key}")
+
+    if not redis_client.exists(key):
+        logger.error(f"Key {key} does not exist.")
+        return
+
+    data_type = redis_client.type(key)
+
+    if data_type == "list":
+        for value in values:
+            redis_client.lrem(key, 0, value)
+        logger.info(f"Successfully deleted {len(values)} values from the list")
+    elif data_type == "set":
+        deleted_count = redis_client.srem(key, *values)
+        logger.info(f"Successfully deleted {deleted_count} values from the set")
+    elif data_type == "zset":
+        deleted_count = redis_client.zrem(key, *values)
+        logger.info(f"Successfully deleted {deleted_count} values from the sorted set")
+    elif data_type == "hash":
+        deleted_count = redis_client.hdel(key, *values)
+        logger.info(f"Successfully deleted {deleted_count} values from the hash")
+    else:
+        logger.error(
+            f"Unsupported data type for deletion: {data_type} or key does not exist."
+        )

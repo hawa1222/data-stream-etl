@@ -3,9 +3,6 @@ Constants required for Project
 """
 
 import os
-import textwrap
-
-#############################################################################################
 
 
 class FileDirectory:
@@ -13,42 +10,61 @@ class FileDirectory:
     Constants related to file directories.
     """
 
-    # Project Folder
     ROOT_DIRECTORY = os.path.abspath(os.path.join(os.path.dirname(__file__), "."))
-    # ROOT_DIRECTORY = os.getcwd()
     ENV_PATH = os.path.join(ROOT_DIRECTORY, ".env_dev")
-
-    # Manual Export Folder
     MANUAL_EXPORT_PATH = (
         "/Users/hadid/Library/Mobile Documents/com~apple~CloudDocs/Shared/ETL"
     )
-    # Raw Data Folder
     RAW_DATA_PATH = os.path.join(ROOT_DIRECTORY, "data", "raw_data")
-    # Clean Data Folder
     CLEAN_DATA_PATH = os.path.join(ROOT_DIRECTORY, "data", "clean_data")
-    # Documentation Folder
     DOCUMENTATION_PATH = os.path.join(ROOT_DIRECTORY, "documentation/docs")
 
 
-class AppleHealth:
+class Daylio:
+    """
+    Constants specific to the Daylio data.
+    """
+
+    DATA_KEY = "daylio_journal"
+    MOOD_DATA = "daylio_mood"
+    ACTIVITY_DATA = "daylio_activities"
+
+    ID = "id"
+    DATE = "full_date"
+    TIME = "time"
+    DATE_TIME = "date_time"
+    ACTIVITY = "activities"
+
+    CLEAN_FIELDS = [DATE_TIME, "mood", "note_title", "note", ACTIVITY]
+
+
+class Spend:
+    """
+    Constants specific to the Spend data.
+    """
+
+    DATA_KEY = "transactions"
+    RAW_SHEET_NAME = "Spending Data"
+    DATE = "date"
+
+
+class Apple:
     """
     Constants specific to the Apple Health.
     """
 
-    # File Names
-    APPLE_XML_PATH = os.path.join(
-        FileDirectory.MANUAL_EXPORT_PATH, "apple_health_export"
-    )
+    XML_DATA = "apple_health"
+    RECORD_DATA = "apple_records"
+    ACTIVITY_DATA = "apple_activity"
 
-    APPLE_XML_DATA = "export.xml"
-    RECORD_DATA = "apple_record.csv"
-    ACTIVITY_DATA = "apple_activity_data.xlsx"
-
-    DOCUMEMTATION_DATA = "apple_data_documentation.xlsx"
-
-    RECORD = "Record"
     ACTIVITY_ELEMENT = "ActivitySummary"
-    RECORD_ELEMENTS = [
+    DATE_COMPONENTS = "date_components"
+    ACTIVE_ENERGY_BURNED = "active_energy_burned"
+    APPLE_EXERCISE_TIME = "apple_exercise_time"
+    APPLE_STAND_HOURS = "apple_stand_hours"
+
+    RECORD_ELEMENT = "Record"
+    RECORD_TYPE = [
         "AppleWalkingSteadiness",
         "BasalEnergyBurned",
         "BloodGlucose",
@@ -76,11 +92,6 @@ class AppleHealth:
         "WalkingStepLength",
     ]
 
-    # Fields
-    DATE_COMPONENTS = "date_components"
-    ACTIVE_ENERGY_BURNED = "active_energy_burned"
-    APPLE_EXERCISE_TIME = "apple_exercise_time"
-    APPLE_STAND_HOURS = "apple_stand_hours"
     CREATION_DATE = "creation_date"
     START_DATE = "start_date"
     END_DATE = "end_date"
@@ -96,7 +107,6 @@ class AppleHealth:
     AWAKE_TIME = "awake_time"
     TIME_IN_BED = "time_in_bed"
 
-    # Data Source Priorities
     PRIORITY_DICT = {
         "HW3 iWatch": 1,
         "HW3 iPhone": 2,
@@ -283,118 +293,139 @@ class AppleHealth:
         }
     }
 
-    # Define logic documentation (details can be filled in later)
-    SCRIPT_LOGIC = textwrap.dedent("""\
-        Apple Data Documentation
-        1
-        2
-        3
-        4
-        5
-        """)
 
-
-class Daylio:
+class Google:
     """
-    Constants specific to the Daylio data.
+    Constants specific to the Google API.
     """
 
-    # File Names
-    RAW_DATA = "daylio_export.csv"
+    TOKEN_FILE = os.path.join(
+        FileDirectory.ROOT_DIRECTORY, "credentials/google/token.json"
+    )
 
-    CLEAN_DATA = "daylio_data.xlsx"
+    DATA_KEY = "youtube_activity"
+    LIKES_DATA = "youtube_likes"
+    SUBS_DATA = "youtube_subs"
+    CHANNEL_DATA = "youtube_channels"
 
-    MOOD_DATA = "daylio_mood.xlsx"
-    ACTIVITY_DATA = "daylio_activities.xlsx"
+    TOKEN_URL = "https://oauth2.googleapis.com/token"
+    SCOPES = [
+        "https://www.googleapis.com/auth/youtube.readonly",
+        "https://www.googleapis.com/auth/youtube",
+    ]
 
-    DOCUMEMTATION_DATA = "daylio_data_documentation.xlsx"
+    MAX_RESULTS = 50
+    API_CONFIG = {
+        "channels": {
+            "api_endpoint": "channels",
+            "parameters": {
+                "id": "UCjCBfi9gMp0tFlaDzDiu_iQ",
+                # "mine": True,
+                "part": "snippet",
+                "maxResults": MAX_RESULTS,
+            },
+        },
+        "subs": {
+            "api_endpoint": "subscriptions",
+            "parameters": {"mine": True, "part": "snippet", "maxResults": MAX_RESULTS},
+        },
+        "likes": {
+            "api_endpoint": "playlistItems",
+            "parameters": {
+                "playlistId": "LLjCBfi9gMp0tFlaDzDiu_iQ",
+                "part": "snippet",
+                "maxResults": MAX_RESULTS,
+            },
+        },
+    }
 
-    # Fields
-    ID = "id"
-    DATE = "full_date"
-    TIME = "time"
-    DATE_TIME = "date_time"
-    ACTIVITY = "activities"
+    # Legacy Fields
+    LEGACY_DATE = "snippet.published_at"
+    LEGACY_VID_ID = "snippet.resource_id.video_id"
+    LEGACY_TITLE = "snippet.title"
+    LEGACY_DESC = "snippet.description"
 
-    CLEAN_FIELDS = ["date_time", "mood", "note_title", "note", ACTIVITY]
+    LEGACY_CHANNEL_ID = "snippet.video_owner_channel_id"
+    LEGACY_SUB_CHANNEL_ID = "snippet.resource_id.channel_id"
+    LEGACY_CHANNEL_TITLE = "snippet.video_owner_channel_title"
 
-    # Documenter
-    SCRIPT_LOGIC = textwrap.dedent("""\
-        Daylio Data Documentation
-        1
-        2
-        3
-        4
-        5
-        """)
+    # New Fields
+    ACTIVITY_TYPE = "activity_type"
+    ACTIVITY_TYPES = ["Liked", "Disliked", "Subscribed", "Voted", "Saved"]
+    SOURCE = "source"
+    SOURCE_VALUE = ["API", "HTML"]
+    DATE = "published_at"
+
+    CONTENT_ID = "content_id"
+    CONTENT_TITLE = "content_title"
+    CONTENT_DESC = "content_desc"
+    CONTENT_URL = "content_url"
+    CONTENT_THUMBNAIL = "content_thumbnail"
+
+    CHANNEL_ID = "channel_id"
+    CHANNEL_TITLE = "channel_title"
+    CHANNEL_DESC = "channel_desc"
+    CHANNEL_URL = "channel_url"
+    CHANNEL_THUMBNAIL = "channel_thumbnail"
+
+    LIKES_MAPPING = {
+        SOURCE: SOURCE,
+        ACTIVITY_TYPE: ACTIVITY_TYPE,
+        LEGACY_DATE: DATE,
+        LEGACY_VID_ID: CONTENT_ID,
+        LEGACY_TITLE: CONTENT_TITLE,
+        LEGACY_DESC: CONTENT_DESC,
+        CONTENT_URL: CONTENT_URL,
+        CONTENT_THUMBNAIL: CONTENT_THUMBNAIL,
+        LEGACY_CHANNEL_ID: CHANNEL_ID,
+        LEGACY_CHANNEL_TITLE: CHANNEL_TITLE,
+        CHANNEL_URL: CHANNEL_URL,
+    }
+
+    SUBS_MAPPING = {
+        SOURCE: SOURCE,
+        ACTIVITY_TYPE: ACTIVITY_TYPE,
+        LEGACY_DATE: DATE,
+        LEGACY_SUB_CHANNEL_ID: CHANNEL_ID,
+        LEGACY_TITLE: CHANNEL_TITLE,
+        LEGACY_DESC: CHANNEL_DESC,
+        CHANNEL_URL: CHANNEL_URL,
+        CHANNEL_THUMBNAIL: CHANNEL_THUMBNAIL,
+    }
+
+    ACTIVITY_FIELDS = [
+        SOURCE,
+        ACTIVITY_TYPE,
+        DATE,
+        CONTENT_ID,
+        CONTENT_TITLE,
+        CONTENT_DESC,
+        CONTENT_URL,
+        CONTENT_THUMBNAIL,
+        CHANNEL_ID,
+        CHANNEL_TITLE,
+        CHANNEL_DESC,
+        CHANNEL_URL,
+        CHANNEL_THUMBNAIL,
+    ]
 
 
-class Spend:
-    """
-    Constants specific to the Daylio data.
-    """
-
-    # File Names
-    RAW_DATA = "Budget.xlsm"
-    RAW_SHEET_NAME = "Spending Data"
-
-    CLEAN_DATA = "spend_transactions.xlsx"
-
-    DOCUMEMTATION_DATA = "spend_documentation.xlsx"
-
-    # Fields
-    DATE = "date"
-
-    # Documenter
-    SCRIPT_LOGIC = textwrap.dedent("""\
-        Spend Data Documentation
-        1
-        2
-        3
-        4
-        5
-        """)
-
-
-class APIHandler:
-    HTTP_200_OK = 200
-    HTTP_400_BAD_REQUEST = 400
-    HTTP_401_UNAUTHORISED = 401
-    HTTP_404_NOT_FOUND = 404
-    HTTP_429_RATE_LIMITED = 429
-    HTTP_500_SERVER_ERROR = 500
-
-    RATE_LIMIT_SLEEP_TIME = 15 * 60
-    ITEMS_PER_PAGE = 50
-
-
-class StravaAPI:
+class Strava:
     """
     Constants specific to the Strava API.
     """
 
     # File Names
-    COMPLETE_DATA = "strava_data.xlsx"
+    ID_KEY = "strava_activity_ids"
+    DATA_KEY = "strava_activity"
 
-    ACTIVITY_DATA = "strava_activity.xlsx"
-    PERFORMANCE_DATA = "strava_performance_metrics.xlsx"
-
-    DOCUMEMTATION_DATA = "strava_data_documentation.xlsx"
+    ACTIVITY_DATA = "strava_events"
+    PERFORMANCE_DATA = "strava_metrics"
 
     # API Parameters
     BASE_URL = "https://www.strava.com/api/v3/athlete/activities"
     ACTIVITY_URL = "https://www.strava.com/api/v3/activities/{}"
     TOKEN_URL = "https://www.strava.com/oauth/token"
-
-    AUTH_HEADER = {"Authorization": None}
-
-    HTTP_200_OK = 200
-    HTTP_400_BAD_REQUEST = 400
-    HTTP_401_UNAUTHORIZED = 401
-    HTTP_429_RATE_LIMITED = 429
-
-    RATE_LIMIT_SLEEP_TIME = 15 * 60  # Time in seconds
-    ITEMS_PER_PAGE = 50
 
     # Fields
     LEGACY_ACT_ID = "id"
@@ -407,7 +438,8 @@ class StravaAPI:
     SPORT = "sport_type"
     MOVE_TIME = "moving_time"
     ELAP_TIME = "elapsed_time"
-    LEGACY_GEAR = "name_2"
+
+    LEGACY_GEAR = "gear.name"
     GEAR_NAME = "gear_name"
 
     SPORT_TEXT = "Workout"
@@ -434,7 +466,7 @@ class StravaAPI:
         "calories",
         "suffer_score",
         "private_note",
-        "polyline",
+        "map_polyline",
     ]
 
     ACTIVITY_FIELDS = [
@@ -443,10 +475,10 @@ class StravaAPI:
         "device_name",
         ACTIVITY_NAME,
         SPORT,
-        "start_date",
+        DATE,
         GEAR_NAME,
         "private_note",
-        "polyline",
+        "map_polyline",
     ]
 
     PERFORMANCE_FIELDS = [
@@ -463,111 +495,18 @@ class StravaAPI:
         "suffer_score",
     ]
 
-    # Documenter
-    SCRIPT_LOGIC = textwrap.dedent("""\
-        Strava Data Documentation
-        1
-        2
-        3
-        4
-        5
-        """)
 
-
-class Google:
+class APIHandler:
     """
-    Constants specific to Google API.
+    Constants related to API handling.
     """
 
-    # File Names
-    RAW_HTML_DATA = "MyActivity.html"
-    PARSED_HTML_DATA = "youtube_activity.xlsx"
+    HTTP_200_OK = 200
+    HTTP_400_BAD_REQUEST = 400
+    HTTP_401_UNAUTHORISED = 401
+    HTTP_404_NOT_FOUND = 404
+    HTTP_429_RATE_LIMITED = 429
+    HTTP_500_SERVER_ERROR = 500
 
-    TOKEN_FILE = os.path.join(
-        FileDirectory.ROOT_DIRECTORY, "credentials/google/token.json"
-    )
-    CLEAN_PLAYLIST_DATA = "youtube_likes_dislikes.xlsx"
-    CHANNEL_DATA = "youtube_channel.xlsx"
-    CACHE_LIKES_DATA = "youtube_likes.xlsx"
-    SUBS_DATA = "youtube_subscriptions.xlsx"
-
-    DOCUMENTATION_DATA = "youtube_data_documentation.xlsx"
-
-    # API Parameters
-    TOKEN_URL = "https://oauth2.googleapis.com/token"
-
-    SCOPES = [
-        "https://www.googleapis.com/auth/youtube.readonly",
-        "https://www.googleapis.com/auth/youtube",
-    ]
-
-    CHANNEL_API_CALL = "channels"
-    PLAYLIST_API_CALL = "playlistItems"
-    SUBS_API_CALL = "subscriptions"
-    MAX_RESULTS = 50
-    API_CONFIG = {
-        "channels": {
-            "api_endpoint": "channels",
-            "parameters": {
-                "id": "UCjCBfi9gMp0tFlaDzDiu_iQ",
-                # "mine": True,
-                "part": "snippet",
-                "maxResults": MAX_RESULTS,
-            },
-        },
-        "subs": {
-            "api_endpoint": "subscriptions",
-            "parameters": {"mine": True, "part": "snippet", "maxResults": MAX_RESULTS},
-        },
-        "likes": {
-            "api_endpoint": "playlistItems",
-            "parameters": {
-                "playlistId": "LLjCBfi9gMp0tFlaDzDiu_iQ",
-                "part": "snippet",
-                "maxResults": MAX_RESULTS,
-            },
-        },
-    }
-
-    # Fields
-    DESC = "description"
-    DATE = "published_at"
-    THUMBNAIL = "thumbnail_url"
-    PLAYLIST = "playlist"
-
-    ACTIVITY_TYPES = ["Liked", "Disliked", "Subscribed", "Voted", "Saved"]
-
-    SOURCE = "source"
-    SOURCE_VALUE = ["API", "HTML"]
-    LEGACY_VID_ID = "resource_id_video_id"
-    LEGACY_CHANNEL_ID = "resource_id_channel_id"
-    VID_TITLE = "title"
-    VID_ID = "video_id"
-    CHANNEL_ID = "channel_id"
-    CHANNEL_URL = "channel_url"
-    VID_URL = "video_url"
-    VID_OWNER = "video_owner_channel_title"
-
-    CHANNEL_FIELDS = [DATE, "id", "title", "custom_url", THUMBNAIL, DESC]
-    LIKES_FIELDS = [
-        DATE,
-        "playlist",
-        "source",
-        "video_id",
-        "title",
-        DESC,
-        THUMBNAIL,
-        "video_owner_channel_title",
-        "channel_id",
-    ]
-    SUBS_FIELDS = [DATE, "resource_id_channel_id", "title", DESC, THUMBNAIL]
-
-    # Documenter
-    SCRIPT_LOGIC = textwrap.dedent("""\
-        Youtube Data Documentation
-        1
-        2
-        3
-        4
-        5
-        """)
+    RATE_LIMIT_SLEEP_TIME = 15 * 60
+    ITEMS_PER_PAGE = 50

@@ -1,14 +1,13 @@
+"""
+Script to set up logging configuration.
+"""
+
 import logging
 import os
 from logging.handlers import RotatingFileHandler
 
-# Custom imports
 from config import Settings
 from constants import FileDirectory
-
-# ------------------------------
-# Logging Configuration
-# ------------------------------
 
 
 def setup_logging():

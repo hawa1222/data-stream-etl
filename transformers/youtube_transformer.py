@@ -1,207 +1,162 @@
-"""
-This script is responsible for transforming and cleaning YouTube data obtained from various sources,
-including channel data, likes data, and subscriptions data. It also updates cached data and documents the transformations.
+import numpy as np
+import pandas as pd
 
-Key Processes:
-1. Data Transformation:
-   - Loads raw data for channel, likes, and subscriptions.
-   - Standardises date formats in the data.
-   - Populates 'thumbnail_url' based on a hierarchy of URL types.
-   - Renames columns if necessary.
-   - Filters and keeps only the required columns.
-   - Saves the processed data in Excel format.
+from constants import FileDirectory, Google
+from utility.clean_dates import parse_date
+from utility.file_manager import FileManager
+from utility.log_manager import setup_logging
 
-2. Updating Cached Data:
-   - Updates the cached 'Likes & Dislikes' data with cleaned data.
-
-3. Documentation:
-   - Documents the data transformations in an Excel file.
-
-Usage:
-- Execute this script as the main module to transform and clean YouTube data.
-- Ensure that the necessary data files are available in the specified directories.
-- The script assumes that the data has been fetched from YouTube and needs processing.
-
-Note:
-- This script is part of a larger data processing system for managing YouTube data.
-- It ensures that YouTube data is transformed, cleaned, and documented for further analysis or reporting.
-"""
-
-# Import standard libraries
-import os  # For interacting with the operating system
-
-import numpy as np  # For numerical operations
-import pandas as pd  # For data manipulation and analysis
-
-# Import constants
-from constants import FileDirectory, Youtube
-from utility.documentation import DataFrameDocumenter  # For documenting data frames
-from utility.download_data_local import update_cache  # For updating cached data
-from utility.file_manager import FileManager  # For file management tasks
-
-# Import custom utility classes and functions
-from utility.logging import setup_logging  # For setting up logging
-from utility.standardise_dates import (
-    standardise_dates,  # For standardising date formats
-)
-from utility.utils import format_data_name, generate_filename
-
-# Initialise logging
 logger = setup_logging()
-
-#############################################################################################
 
 
 def get_best_url(row):
     """
-    Given a row from a DataFrame, find the best available URL based on a hierarchy of URL types.
+    Finds the best available URL for a given row based on hierarchy.
 
     Parameters:
-    - row (pandas.Series): A row from a DataFrame containing various types of URLs.
+    - row: Row from a DataFrame containing various types of URLs.
 
     Returns:
-    - str/np.nan: The best available URL or np.nan if none found.
+    - str/np.nan: Best available URL or np.nan if none found.
     """
-    # Loop through URL types in a specified order to find the best available URL
+    # Loop through URL types in specified order to find best available
     for url_type in [
-        "maxres_url",
-        "standard_url",
-        "high_url",
-        "medium_url",
-        "default_url",
+        "snippet.thumbnails.maxres.url",
+        "snippet.thumbnails.standard.url",
+        "snippet.thumbnails.high.url",
+        "snippet.thumbnails.medium.url",
+        "snippet.thumbnails.default.url",
     ]:
         if pd.notna(row.get(url_type)):
             return row[url_type]
     return np.nan  # Return np.nan if no URL is found
 
 
-# Loads, cleans and saves data. Returns raw df, and clean df
-def process_and_save_data(file_manager, file_name, columns_needed, new_name_dict={}):
+def likes_transformer(df):
     """
-    Load, process, and save data from a specified Excel file.
+    Transforms YouTube likes data:
+
+    1. Rename fields.
+    2. Add source and activity_type fields.
+    3. Add content_url and channel_url fields.
+    4. Standardise date field.
+    5. Add content_thumbnail field.
+    6. Subset DataFrame to only include required fields.
 
     Parameters:
-    - file_name (str): Name of the Excel file to process.
-    - columns_needed (list): List of column names that are needed in the final DataFrame.
-    - new_name_dict (dict, optional): Dictionary of new column names, keys are old names, values are new names.
+        df: DataFrame containing the likes data.
 
     Returns:
-    - pandas.DataFrame, pandas.DataFrame: The original data and the processed data.
+        DataFrame: Transformed DataFrame.
     """
-    logger.info(f"Processing {file_name}")
+    try:
+        logger.info("Transforming likes data...")
 
-    # Load the raw data from the specified Excel file
-    data = file_manager.load_file(FileDirectory.RAW_DATA_PATH, file_name)
+        df = df.rename(columns=Google.LIKES_MAPPING)
 
-    # Make a copy of the raw data
-    data_copy = data.copy()
+        df[Google.SOURCE] = Google.SOURCE_VALUE[0]
+        df[Google.ACTIVITY_TYPE] = Google.ACTIVITY_TYPES[0]
 
-    # Standardise the date format for the 'published_at' column
-    # Standardize the date field if it exists
-    if Youtube.DATE in data_copy.columns:
-        data_updated = standardise_dates(data_copy, Youtube.DATE)
-    else:
-        # Log a warning if the date field is not found
-        logger.warning("Date field not found in activity data.")
+        df[Google.CONTENT_URL] = (
+            "https://www.youtube.com/watch?v=" + df[Google.CONTENT_ID]
+        )
+        df[Google.CHANNEL_URL] = (
+            "https://www.youtube.com/channel/" + df[Google.CHANNEL_ID]
+        )
 
-    # Use the get_best_url function to populate the 'thumbnail_url' column
-    data_updated[Youtube.THUMBNAIL] = data_updated.apply(get_best_url, axis=1)
+        logger.info(f"Stardardising {Google.DATE} field...")
+        logger.info(f"Sample before cleaning: {df[Google.DATE].head(2).to_list()}")
+        df[Google.DATE] = df[Google.DATE].apply(parse_date)
+        logger.info(f"Sample after cleaning: {df[Google.DATE].head(2).to_list()}")
 
-    # Rename columns if a renaming dictionary is provided
-    if new_name_dict:
-        data_updated.rename(columns=new_name_dict, inplace=True)
+        df[Google.CONTENT_THUMBNAIL] = df.apply(get_best_url, axis=1)
 
-    # Filter the DataFrame to keep only the required columns
-    data_updated = data_updated[columns_needed]
+        df = df[list(Google.LIKES_MAPPING.values())]
 
-    # Save the processed data to an Excel file
-    file_manager.save_file(FileDirectory.CLEAN_DATA_PATH, data_updated, file_name)
+        logger.info(
+            f"Renamed / added fields: [{', '.join(Google.LIKES_MAPPING.values())}]"
+        )
 
-    return data_copy, data_updated  # Return the original and processed data
+        logger.info("Successfully transformed likes data")
+
+        return df
+
+    except Exception as e:
+        logger.error(f"Error occurred in likes_transformer: {str(e)}")
+        raise
 
 
-#############################################################################################
+def subs_transformer(df):
+    """
+    Transform YouTube subs data:
+
+    1. Rename fields.
+    2. Add source and activity_type fields.
+    3. Add channel_url field.
+    4. Standardise date field.
+    5. Add channel_thumbnail field.
+    6. Subset DataFrame to only include required fields.
+
+    Parameters:
+        df: DataFrame containing the subs data.
+
+    Returns:
+        DataFrame: Transformed DataFrame.
+    """
+    try:
+        logger.info("Transforming subs data...")
+
+        df = df.rename(columns=Google.SUBS_MAPPING)
+
+        df[Google.SOURCE] = Google.SOURCE_VALUE[0]
+        df[Google.ACTIVITY_TYPE] = Google.ACTIVITY_TYPES[2]
+
+        df[Google.CHANNEL_URL] = (
+            "https://www.youtube.com/channel/" + df[Google.CHANNEL_ID]
+        )
+
+        logger.info(f"Stardardising {Google.DATE} field...")
+        logger.info(f"Sample before cleaning: {df[Google.DATE].head(2).to_list()}")
+        df[Google.DATE] = df[Google.DATE].apply(parse_date)
+        logger.info(f"Sample after cleaning: {df[Google.DATE].head(2).to_list()}")
+
+        df[Google.CHANNEL_THUMBNAIL] = df.apply(get_best_url, axis=1)
+
+        df = df[list(Google.SUBS_MAPPING.values())]
+
+        logger.info(
+            f"Renamed / added fields: [{', '.join(Google.SUBS_MAPPING.values())}]"
+        )
+
+        logger.info("Successfully transformed subs data")
+
+        return df
+
+    except Exception as e:
+        logger.error(f"Error occurred in subs_transformer: {str(e)}")
+        raise
 
 
 def youtube_transformer():
     """
-    Execute a series of data transformations on YouTube data and save it.
-
-    This function carries out multiple steps:
-    1. Process and save 'Channel' data.
-    2. Process and save 'Likes' data.
-    3. Process and save 'Subscriptions' data.
-    4. Update cached 'Likes & Dislikes' data.
-    5. Document all transformations.
+    Main function to load YouTube Data, clean & transform it, and save to local storage.
     """
-    # Initilaise FileManager Class
-    file_manager = FileManager()
+    logger.info("!!!!!!!!!!!! youtube_transformer.py !!!!!!!!!!!")
 
-    # Columns to keep for 'Channel' data and process it
-    channel_data, channel_data_updated = process_and_save_data(
-        file_manager, Youtube.CHANNEL_DATA, Youtube.CHANNEL_FIELDS
-    )
+    try:
+        file_manager = FileManager()
 
-    # Columns to keep for 'Likes' data and process it
-    likes_data, likes_data_updated = process_and_save_data(
-        file_manager,
-        Youtube.CACHE_LIKES_DATA,
-        Youtube.LIKES_FIELDS,
-        {Youtube.LEGACY_VID_ID: Youtube.VID_ID},
-    )
+        lk_df = file_manager.load_file(FileDirectory.RAW_DATA_PATH, Google.LIKES_DATA)
+        lk_df = likes_transformer(lk_df)
 
-    # Columns to keep for 'Subscriptions' data and process it
-    subs_data, subs_data_updated = process_and_save_data(
-        file_manager, Youtube.SUBS_DATA, Youtube.SUBS_FIELDS
-    )
+        subs_df = file_manager.load_file(FileDirectory.RAW_DATA_PATH, Google.SUBS_DATA)
+        subs_df = subs_transformer(subs_df)
 
-    # Load raw & cleaned HTML data
-    parsed_html = file_manager.load_file(
-        FileDirectory.RAW_DATA_PATH, Youtube.PARSED_HTML_DATA
-    )
-    clean_html = file_manager.load_file(
-        FileDirectory.CLEAN_DATA_PATH, Youtube.CLEAN_PLAYLIST_DATA
-    )
+        file_manager.save_file(FileDirectory.CLEAN_DATA_PATH, Google.LIKES_DATA, lk_df)
+        file_manager.save_file(FileDirectory.CLEAN_DATA_PATH, Google.SUBS_DATA, subs_df)
 
-    # Update the cached 'Likes & Dislikes' data
-    updated_playlist_data = update_cache(
-        FileDirectory.CLEAN_DATA_PATH,
-        likes_data_updated,
-        clean_html,
-        Youtube.CLEAN_PLAYLIST_DATA,
-        Youtube.VID_ID,
-    )
-
-    # Define the path for Excel documentation
-    doc_path = os.path.join(
-        FileDirectory.DOCUMENTATION_PATH, generate_filename(Youtube.DOCUMENTATION_DATA)
-    )
-
-    # Define the data frames to document and their corresponding names
-    data_frames = {
-        "raw": {
-            format_data_name(Youtube.CHANNEL_DATA): channel_data,
-            format_data_name(Youtube.CACHE_LIKES_DATA): likes_data,
-            format_data_name(Youtube.PARSED_HTML_DATA): parsed_html,
-            format_data_name(Youtube.SUBS_DATA): subs_data,
-        },
-        "clean": {
-            format_data_name(Youtube.CHANNEL_DATA): channel_data_updated,
-            format_data_name(Youtube.CLEAN_PLAYLIST_DATA): updated_playlist_data,
-            format_data_name(Youtube.SUBS_DATA): subs_data_updated,
-        },
-    }
-
-    # Initialise the DataFrameDocumenter class
-    documenter = DataFrameDocumenter(doc_path, Youtube.SCRIPT_LOGIC)
-
-    # Loop through each category ('raw', 'clean') and document each DataFrame
-    for category, frames in data_frames.items():
-        for name, df in frames.items():
-            documenter.document_data_excel(df, category, name)
-
-    # Save the documentation Excel file
-    documenter.save()
+    except Exception as e:
+        logger.error(f"Error occurred in youtube_transformer: {str(e)}")
 
 
 if __name__ == "__main__":

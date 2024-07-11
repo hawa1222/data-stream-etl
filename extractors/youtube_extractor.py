@@ -5,9 +5,10 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 from constants import FileDirectory, Google
-from utility import cache_data, standardise_data, upload_data_s3
+from utility import redis_manager, s3_manager
+from utility.clean_data import CleanData
 from utility.file_manager import FileManager
-from utility.logging import setup_logging
+from utility.log_manager import setup_logging
 
 logger = setup_logging()
 
@@ -25,6 +26,11 @@ class YouTubeExtractor:
         max_pages: Maximum number of pages to fetch from API.
         credentials: OAuth 2.0 credentials.
         youtube: YouTube API service object.
+
+    Methods:
+        _refresh_token: Refreshes OAuth 2.0 token if necessary.
+        _api_call: Makes paginated API calls to YouTube Data API.
+        extract_data: Extracts data from specific YouTube API endpoint.
     """
 
     def __init__(self, token_file, scopes, max_pages):
@@ -34,20 +40,15 @@ class YouTubeExtractor:
         self.token_file = token_file
         self.scopes = scopes
         self.max_pages = max_pages
-
-        try:
-            self.credentials = self._refresh_token()
-            self.youtube = build("youtube", "v3", credentials=self.credentials)
-        except Exception as e:
-            logger.error(f"Failed to initialise YouTubeExtractor: {str(e)}")
-            raise
+        self.credentials = self._refresh_token()  # Refresh OAuth 2.0 token
+        self.youtube = build("youtube", "v3", credentials=self.credentials)
 
     def _refresh_token(self):
         """
         Refreshes OAuth 2.0 token if necessary.
 
         Returns:
-            Refreshed credentials.
+            Constructed credentials
 
         Raises:
             FileNotFoundError: If token file is not found.
@@ -56,9 +57,9 @@ class YouTubeExtractor:
         logger.info("Checking if API token needs refreshing...")
 
         try:
-            # Load credentials from token file into Credentials object
+            # Create Credentials object
             creds = Credentials.from_authorized_user_file(self.token_file, self.scopes)
-            if creds.expired and creds.refresh_token:  # Check if token expired
+            if creds.expired and creds.refresh_token:
                 logger.warning("Token has expired. Refreshing token...")
                 creds.refresh(Request())  # Refresh token
                 logger.info("Successfully refreshed token")
@@ -67,24 +68,27 @@ class YouTubeExtractor:
                     logger.info("Successfully saved new credentials to token.json")
             else:
                 logger.info("Token is still valid. No need to refresh")
+
             return creds
-        except FileNotFoundError:
-            logger.error(f"Token file not found: {self.token_file}")
-            raise
-        except IOError as e:
-            logger.error(f"Error reading or writing token file: {e}")
+
+        except FileNotFoundError as e:
+            logger.error(f"FileNotFoundError Error refreshing access_token: {str(e)}")
             raise
 
-    def _api_call(self, api_endpoint, params):
+        except IOError as e:
+            logger.error(f"I/O Error refreshing access_token: {str(e)}")
+            raise
+
+    def _api_call(self, api_endpoint, api_params):
         """
         Makes paginated API calls to YouTube Data API.
 
-        Args:
+        Parameters:
             api_endpoint: Type of API call (e.g., 'channels', 'playlistItems').
-            params: Parameters for API call (e.g., 'part', 'id').
+            api_params: Parameters for API call (e.g., 'part', 'id').
 
         Returns:
-            List of items returned by API.
+            list: Raw data entries from API.
 
         Raises:
             HttpError: If there's an error with API request.
@@ -95,31 +99,36 @@ class YouTubeExtractor:
         for page in range(self.max_pages):
             try:
                 if next_page_token:  # Add token for next page if available
-                    params["pageToken"] = next_page_token
+                    api_params["pageToken"] = next_page_token
                 response = (
-                    getattr(self.youtube, api_endpoint)().list(**params).execute()
+                    getattr(self.youtube, api_endpoint)().list(**api_params).execute()
                 )  # Make API call
                 items.extend(response.get("items", []))  # Add items to list
                 next_page_token = response.get("nextPageToken")  # Get next page token
                 logger.info(f"Fetched page {page + 1} of {api_endpoint} data")
+
                 if not next_page_token:
                     break  # Break loop if no more pages to fetch
+
             except HttpError as e:
-                logger.error(f"An HTTP error occurred: {e}")
+                logger.error(f"HTTP Error making API call to {api_endpoint}: {str(e)}")
                 raise
+
             except Exception as e:
-                logger.error(f"An error occurred: {e}")
+                logger.error(f"Error making API call to {api_endpoint}: {str(e)}")
                 raise
+
         return items
 
     def extract_data(self, config):
-        """Extracts data from specific YouTube API endpoint.
+        """
+        Extracts data from specific YouTube API endpoint.
 
-        Args:
+        Parameters:
             config: Configuration for API call, including endpoint and parameters.
 
         Returns:
-            List of raw data entries from API.
+            list: Raw data entries from API.
 
         Raises:
             RuntimeError: If API call fails or returns unexpected data.
@@ -131,18 +140,21 @@ class YouTubeExtractor:
         logger.info(f"Fetching YouTube API data from {api_endpoint} endpoint...")
         try:
             raw_data = self._api_call(api_endpoint, params)  # Make API call
-            if not raw_data:  # Check if data returned
-                error_message = f"No data returned from {api_endpoint} endpoint"
-                logger.error(error_message)
-                raise RuntimeError(error_message)
+
+            if not raw_data:  # No data returned
+                raise RuntimeError
+
             logger.info(f"Successfully fetched {len(raw_data)} total entries")
+
             return raw_data
+
+        except RuntimeError as e:
+            logger.error(f"Error, no data returned: {str(e)}")
+            raise
+
         except Exception as e:
-            error_message = (
-                f"Error occured extracting data from {api_endpoint} endpoint: {str(e)}"
-            )
-            logger.error(error_message)
-            raise Exception(error_message)
+            logger.error(f"Error extracting data: {str(e)}")
+            raise
 
 
 def clean_desc(df, field_name):
@@ -152,7 +164,7 @@ def clean_desc(df, field_name):
     Replaces "http://" and "https://" with "http[://]" and "https[://]" respectively.
     Adds single quote "'" to beginning of string if it starts with "=".
 
-    Args:
+    Parameters:
         df: DataFrame to clean.
         field_name: name of field to clean.
 
@@ -171,46 +183,39 @@ def clean_desc(df, field_name):
 
 def youtube_extractor():
     """
-    Main function to fetch & standardise ouTube data, update cache, save data to S3,
-    and local storage.
+    Main function to fetch YouTube Data, drop NAs, standardise field names, update cache,
+    save to S3 and local storage.
     """
     logger.info("!!!!!!!!!!!! youtube_extractor.py !!!!!!!!!!!")
 
     try:
-        # Initialise FileManager & YouTubeExtractor
         file_manager = FileManager()
         extractor = YouTubeExtractor(Google.TOKEN_FILE, Google.SCOPES, max_pages=200)
 
         # Fetch data for each API endpoint ('subscriptions', 'channels', 'playlistItems')
         for data_name, config in Google.API_CONFIG.items():
-            cache_key = f"youtube_{data_name}"  # Define cache key
+            obj_key = f"youtube_{data_name}"  # Define object key
 
-            cached_data = cache_data.get_cached_data(cache_key)  # Get cached data
-            if cached_data is not None:  # Check if cached data exists
-                raw_data = cached_data  # Use cached data
-                logger.info(f"Successfully fetched {len(raw_data)} total entries")
+            cached_data = redis_manager.get_cached_data(obj_key)  # Fetch cached data
+            if cached_data is not None:  # Check cached data exists
+                sd_data = pd.DataFrame(cached_data)  # Convert to DataFrame
+                logger.info(f"Successfully fetched {len(sd_data)} total entries")
             else:
                 raw_data = extractor.extract_data(config)  # Fetch new data
 
-                cache_data.update_cached_data(cache_key, raw_data)  # Cache new data
+                # Flatten JSON data, standardise, and clean description field
+                normalised_data = pd.json_normalize(raw_data)
+                sd_data = CleanData.clean_data(normalised_data, 5)
+                sd_data = clean_desc(sd_data, "snippet.description")
 
-                normalised_data = pd.json_normalize(raw_data)  # Flatten JSON data
-                # Standardise data & clean description field
-                standardised_data = standardise_data.CleanData.clean_data(
-                    normalised_data, na_threshold=5
-                )
-                standardised_data = clean_desc(standardised_data, "snippet.description")
+                # Cache new data, upload to S3
+                redis_manager.update_cached_data(obj_key, sd_data)
+                s3_manager.post_data_to_s3(obj_key, sd_data, overwrite=True)
 
-                upload_data_s3.post_data_to_s3(
-                    standardised_data, cache_key, overwrite=True
-                )  # Upload data to S3, overwrite existing data
-                file_manager.save_file(
-                    FileDirectory.RAW_DATA_PATH,
-                    standardised_data,
-                    cache_key + "_data.xlsx",
-                )  # Save data to local file
+            file_manager.save_file(FileDirectory.RAW_DATA_PATH, obj_key, sd_data)
+
     except Exception as e:
-        logger.error(f"Error occurred fetching YouTube data: {str(e)}")
+        logger.error(f"Error occurred in youtube_extractor: {str(e)}")
 
 
 if __name__ == "__main__":

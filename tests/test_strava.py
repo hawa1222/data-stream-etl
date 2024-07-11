@@ -11,7 +11,7 @@ from extractors.strava_extractor import (
     refresh_access_token,
     strava_extractor,
 )
-from utility.logging import setup_logging
+from utility.log_manager import setup_logging
 
 logger = setup_logging()
 

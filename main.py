@@ -1,10 +1,7 @@
-# Custom imports
-from archive.youtube_extractor import youtube_extractor
 from extractors.apple_extractor import apple_extractor
 from extractors.daylio_extractor import daylio_extractor
 from extractors.spend_extractor import spend_extractor
 from extractors.strava_extractor import strava_extractor
-from extractors.youtube_html_extractor import youtube_html_extractor
 from loaders.apple_loader import apple_loader
 from loaders.daylio_loader import daylio_loader
 from loaders.spend_loader import spend_loader
@@ -14,22 +11,24 @@ from transformers.apple_transformer import apple_transformer
 from transformers.daylio_transformer import daylio_transformer
 from transformers.spend_transformer import spend_transformer
 from transformers.strava_transformer import strava_transformer
-from transformers.youtube_html_transformer import youtube_html_transformer
-from transformers.youtube_transformer import youtube_transformer
-
-# Initialise logging
-from utility.logging import setup_logging
+from transformers.youtube_activity_transformer import youtube_activity_transformer
+from utility.log_manager import setup_logging
 from validation.post_load_checks import post_load
 
 logger = setup_logging()
-
-##################################################################################################################################
 
 
 def main():
     apple_extractor()
     apple_transformer()
     apple_loader()
+
+    strava_extractor()
+    strava_transformer()
+    strava_loader()
+
+    youtube_activity_transformer()
+    youtube_loader()
 
     daylio_extractor()
     daylio_transformer()
@@ -38,17 +37,6 @@ def main():
     spend_extractor()
     spend_transformer()
     spend_loader()
-
-    strava_extractor()
-    strava_transformer()
-    strava_loader()
-
-    youtube_html_extractor()
-    youtube_html_transformer()
-
-    youtube_extractor()
-    youtube_transformer()
-    youtube_loader()
 
     post_load()
 

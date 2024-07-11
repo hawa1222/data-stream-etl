@@ -1,101 +1,91 @@
-"""
-This script is responsible for transforming raw YouTube activity data from HTML format into a structured 
-DataFrame and saving it as an Excel file. It performs various data manipulations to extract relevant 
-information and prepare it for further analysis or reporting.
+from constants import FileDirectory, Google
+from utility.clean_dates import parse_date
+from utility.file_manager import FileManager
+from utility.log_manager import setup_logging
 
-Key Functions:
-1. `manipulate_activity_data(activity_df)`: Performs data manipulations on a DataFrame containing YouTube activity data. 
-Extracts video IDs, standardises dates, adds additional fields, and subsets the DataFrame. Returns the manipulated DataFrame.
-
-2. `youtube_transformer()`: Main function that serves as the entry point for transforming raw HTML 
-data into a structured DataFrame and saving it as an Excel file.
-
-Usage:
-- Execute this script as the main module to transform raw YouTube activity data.
-- Ensure that the raw HTML data file (containing YouTube activity data) is available in the specified directory.
-- The script performs data cleaning and manipulation to prepare the data for analysis or reporting.
-- The transformed data is saved as an Excel file in a structured format.
-
-Note:
-- This script is part of a larger data processing system for managing YouTube data.
-- It assumes that the input data is in HTML format and contains activity information.
-- The script adds fields such as video ID, thumbnail URL, channel ID, description, and source to the data.
-- It standardises dates and subsets the data to keep only desired fields for further analysis.
-"""
-
-# Custom imports
-from constants import FileDirectory, Youtube
-from utility.file_manager import FileManager 
-from utility.standardise_dates import standardise_dates  # For standardising date formats
-from utility.logging import setup_logging  # Custom logging setup
-
-# Initialise logging
 logger = setup_logging()
 
-#############################################################################################
 
-# Define a function to manipulate a DataFrame containing activity data
-def manipulate_activity_data(activity_df):
+def manipulate_activity_data(df):
     """
-    Performs various data manipulations on a DataFrame containing YouTube activity data.
+    Transforms YouTube activity data:
+
+    1. Standardise date field.
+    2. Extract content_id, content_thumbnail, and channel_id from content_url and channel_url.
+    3. Add source field.
+    4. Subset DataFrame to only include required fields.
 
     Parameters:
-        activity_df (DataFrame): DataFrame containing the activity data.
+        df: Raw DataFrame containing YouTube activity data.
 
     Returns:
-        DataFrame: DataFrame containing the manipulated activity data.
+        DataFrame: Manipulated DataFrame.
     """
 
-    logger.info('Cleaning data...')
+    try:
+        logger.info("Cleaning activity data...")
 
-    # Extract the video_id from the video_url field
-    activity_df[Youtube.VID_ID] = activity_df[Youtube.VID_URL].str.split('v=').str[1].str.split('&').str[0]
+        logger.info(f"Stardardising {Google.DATE} field...")
+        logger.info(f"Sample before cleaning: {df[Google.DATE].head(2).to_list()}")
+        df[Google.DATE] = df[Google.DATE].apply(parse_date)
+        logger.info(f"Sample after cleaning: {df[Google.DATE].head(2).to_list()}")
 
-    # Create a thumbnail_url field based on the video_id
-    activity_df[Youtube.THUMBNAIL] = 'https://img.youtube.com/vi/' + activity_df[Youtube.VID_ID] + '/maxresdefault.jpg'
+        df[Google.CONTENT_ID] = (
+            df[Google.CONTENT_URL]
+            .astype(str)
+            .str.extract(r"(?:v=|list=|\/post\/)([^&]*)")[0]
+            .str.split("&")
+            .str[0]
+        )  # Extract content_id from content_url
 
-    # Extract the channel_id from the channel_url field
-    activity_df[Youtube.CHANNEL_ID] = activity_df[Youtube.CHANNEL_URL].str.split('channel/').str[1].str.split('&').str[0]
+        df[Google.CONTENT_THUMBNAIL] = (
+            "https://img.youtube.com/vi/" + df[Google.CONTENT_ID] + "/maxresdefault.jpg"
+        )  # Extract content_thumbnail from content_id
 
-    # Standardise dates
-    activity_df = standardise_dates(activity_df, Youtube.DATE)
+        df[Google.CHANNEL_ID] = (
+            df[Google.CHANNEL_URL].str.split("channel/").str[1].str.split("&").str[0]
+        )  # Extract channel_id from channel_url
 
-    # Create a description field and set it to None
-    activity_df[Youtube.DESC] = None
+        logger.info(
+            f"Succesfully created '{Google.CONTENT_ID}', '{Google.CONTENT_THUMBNAIL}', and '{Google.CHANNEL_ID}' fields"
+        )
 
-    # Create a source field and set it to 'HTML'
-    activity_df[Youtube.SOURCE] = Youtube.SOURCE_VALUE[1]
+        df[Google.CONTENT_DESC] = None
+        df[Google.CHANNEL_DESC] = None
+        df[Google.CHANNEL_THUMBNAIL] = None
+        df[Google.SOURCE] = Google.SOURCE_VALUE[1]
 
-    # Subset set to keep only desired fields
-    activity_df = activity_df[Youtube.LIKES_FIELDS]
+        df = df[Google.ACTIVITY_FIELDS]
 
-    logger.info('Successfully cleaned HTML data')
+        logger.info("Successfully cleaned HTML data")
 
-    # Return the manipulated DataFrame
-    return activity_df
+        return df
 
-# Define the main function that performs the complete transformation
+    except Exception as e:
+        logger.error(f"Error occurred in manipulate_activity_data: {str(e)}")
+        raise
+
+
 def youtube_html_transformer():
     """
-    Serves as the main entry point for transforming raw YouTube activity data from HTML format
-    into a structured DataFrame, which is then saved as an Excel file.
-
-    Returns:
-        None
+    Main function to load YouTube HTML Data, clean & transform, and save to local storage.
     """
+    logger.info("!!!!!!!!!!!! youtube_html_transformer.py !!!!!!!!!!!")
 
-    # Initilaise FileManager Class
-    file_manager = FileManager()
+    try:
+        file_manager = FileManager()
 
-    # Load the Parsed HTML file
-    parsed_html = file_manager.load_file(FileDirectory.RAW_DATA_PATH, Youtube.PARSED_HTML_DATA)
+        parsed_html = file_manager.load_file(
+            FileDirectory.RAW_DATA_PATH, Google.DATA_KEY
+        )
 
-    # Manipulate the DataFrame
-    activity_data = manipulate_activity_data(parsed_html)
+        act_df = manipulate_activity_data(parsed_html)
 
-    # Save the DataFrame as an Excel file
-    file_manager.save_file(FileDirectory.CLEAN_DATA_PATH, activity_data, Youtube.CLEAN_PLAYLIST_DATA)
+        file_manager.save_file(FileDirectory.CLEAN_DATA_PATH, Google.DATA_KEY, act_df)
 
-# This block ensures the youtube_transformer function only runs when the script is executed directly
+    except Exception as e:
+        logger.error(f"Error occurred in youtube_html_transformer: {str(e)}")
+
+
 if __name__ == "__main__":
     youtube_html_transformer()
