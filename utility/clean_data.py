@@ -48,7 +48,7 @@ class CleanData:
         Returns:
             DataFrame: DataFrame with standardised column names and NaN rows removed
         """
-        logger.info("Standardising data...")
+        logger.info("Standardising field names and dropping NaN rows...")
 
         if na_threshold is not None:
             df = CleanData.drop_na_rows(df, threshold=na_threshold)
@@ -62,8 +62,31 @@ class CleanData:
                 changed_fields.append(new_col_name)
 
         df.columns = df_fields
+        logger.info(f"{len(changed_fields)} field names changed: {changed_fields}")
+
+        return df
+
+
+def round_floats(df):
+    """
+    Rounds float fields in the DataFrame to 2 decimal places.
+
+    Parameters:
+        df: Input DataFrame.
+
+    Returns:
+        DataFrame: DataFrame with rounded float columns.
+    """
+    try:
+        for column in df.select_dtypes(include=["float64"]).columns:
+            df[column] = df[column].round(2)
+
         logger.info(
-            f"{len(changed_fields)} total field names changed: {changed_fields}"
+            f"Successfully rounded {len(df.select_dtypes(include=['float64']).columns)} float columns to 2 Decimal Places"
         )
 
         return df
+
+    except Exception as e:
+        logger.error(f"Error occurred in round_floats: {str(e)}")
+        raise

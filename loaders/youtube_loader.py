@@ -21,7 +21,7 @@ def youtube_loader():
 
         datasets = {
             ACTIVITY_DATA: {
-                "key_id": "VARCHAR(70) NOT NULL PRIMARY KEY",
+                "id": "VARCHAR(70) NOT NULL PRIMARY KEY",
                 "source": "VARCHAR(10)",
                 "activity_type": "VARCHAR(12)",
                 "published_at": "TIMESTAMP NOT NULL",

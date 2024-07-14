@@ -3,6 +3,7 @@ from datetime import datetime
 import pandas as pd
 from zoneinfo import ZoneInfo
 
+from config import Settings
 from constants import Daylio, FileDirectory
 from utility.clean_dates import parse_date
 from utility.file_manager import FileManager
@@ -14,7 +15,7 @@ logger = setup_logging()
 def add_uk_timezone(date_string):
     dt = datetime.strptime(date_string, "%Y-%m-%d %I:%M%p")  # 2024-03-29 3:04PM
 
-    uk_time = dt.replace(tzinfo=ZoneInfo("Europe/London"))  # Add UK timezone
+    uk_time = dt.replace(tzinfo=ZoneInfo(Settings.TIMEZONE))  # Add UK timezone
 
     return uk_time.strftime("%Y-%m-%d %I:%M%p %Z")  # 2024-03-29 3:04PM BST
 
@@ -49,6 +50,10 @@ def clean_data(df):
         logger.info(f"Sample before parsing: {df[Daylio.DATE_TIME].head(2).to_list()}")
         df[Daylio.DATE_TIME] = df[Daylio.DATE_TIME].apply(parse_date)  # Parse dates
         logger.info(f"Sample after cleaning: {df[Daylio.DATE_TIME].head(2).to_list()}")
+
+        df[[Daylio.MOOD_SCORE, Daylio.MOOD_CAT]] = df[Daylio.MOOD].str.split(
+            "-", expand=True
+        )  # Split 'mood' field into 'mood_score' and 'mood_category'
 
         df = df[Daylio.CLEAN_FIELDS]
 

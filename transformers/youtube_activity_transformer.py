@@ -98,7 +98,7 @@ def youtube_activity_transformer():
         enriched_act_df["content_id"].fillna("", inplace=True)
         enriched_act_df["channel_id"].fillna("", inplace=True)
 
-        enriched_act_df["key_id"] = (
+        enriched_act_df["id"] = (
             enriched_act_df["activity_type"]
             + enriched_act_df["published_at"]
             + enriched_act_df["content_id"]

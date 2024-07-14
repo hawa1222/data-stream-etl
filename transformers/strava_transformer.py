@@ -1,4 +1,5 @@
 from constants import FileDirectory, Strava
+from utility.clean_data import round_floats
 from utility.clean_dates import parse_date
 from utility.file_manager import FileManager
 from utility.log_manager import setup_logging
@@ -44,12 +45,14 @@ def clean_data(df):
         )  # Replace sport text
 
         df[Strava.SPORT] = df[Strava.SPORT].str.replace(
-            r"(?<=[a-s])(?=[A-Z])", " ", regex=True
+            r"(?<=[a-z])(?=[A-Z])", " ", regex=True
         )  # Add space between lowercase and uppercase letters
 
         # Convert times from seconds to minutes
-        df[Strava.MOVE_TIME] = (df[Strava.MOVE_TIME] / 60).round(2)
-        df[Strava.ELAP_TIME] = (df[Strava.ELAP_TIME] / 60).round(2)
+        df[Strava.MOVE_TIME] = df[Strava.MOVE_TIME] / 60
+        df[Strava.ELAP_TIME] = df[Strava.ELAP_TIME] / 60
+
+        df = round_floats(df)  # Round float fields to 2 DP
 
         logger.info("Successfully cleaned data")
 

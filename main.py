@@ -19,26 +19,30 @@ logger = setup_logging()
 
 
 def main():
-    apple_extractor()
-    apple_transformer()
-    apple_loader()
+    try:
+        apple_extractor()
+        apple_transformer()
+        apple_loader()
 
-    strava_extractor()
-    strava_transformer()
-    strava_loader()
+        strava_extractor()
+        strava_transformer()
+        strava_loader()
 
-    youtube_activity_transformer()
-    youtube_loader()
+        youtube_activity_transformer()
+        youtube_loader()
 
-    daylio_extractor()
-    daylio_transformer()
-    daylio_loader()
+        daylio_extractor()
+        daylio_transformer()
+        daylio_loader()
 
-    spend_extractor()
-    spend_transformer()
-    spend_loader()
+        spend_extractor()
+        spend_transformer()
+        spend_loader()
 
-    post_load()
+        post_load()
+
+    except Exception as e:
+        logger.error(f"Error occurred in main: {str(e)}")
 
 
 if __name__ == "__main__":

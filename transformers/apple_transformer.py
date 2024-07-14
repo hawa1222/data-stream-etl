@@ -2,7 +2,7 @@ import pandas as pd
 
 from config import Settings
 from constants import Apple, FileDirectory
-from utility.clean_data import CleanData
+from utility.clean_data import CleanData, round_floats
 from utility.clean_dates import parse_date
 from utility.file_manager import FileManager
 from utility.log_manager import setup_logging
@@ -387,6 +387,10 @@ def apple_transformer():
         logger.info("Sucessfully created complete_dict with activity & record data")
 
         joined_data_by_group = join_data_by_group(record_dict_transformed)
+
+        for key, df in joined_data_by_group.items():
+            logger.info(f"Rounding floats in {key} DataFrame...")
+            joined_data_by_group[key] = round_floats(df)
 
         for col in [Apple.BED_TIME, Apple.AWAKE_TIME]:
             df = joined_data_by_group["sleep"]

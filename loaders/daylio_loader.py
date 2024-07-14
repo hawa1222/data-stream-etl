@@ -20,7 +20,8 @@ def daylio_loader():
         datasets = {
             Daylio.MOOD_DATA: {
                 "date_time": "TIMESTAMP NOT NULL PRIMARY KEY",
-                "mood": "VARCHAR(20) NOT NULL",
+                "mood_score": "TINYINT UNSIGNED NOT NULL",
+                "mood_category": "VARCHAR(20) NOT NULL",
                 "note_title": "TEXT",
                 "note": "TEXT",
             },

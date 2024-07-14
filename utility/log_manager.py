@@ -36,9 +36,16 @@ def setup_logging():
     logger.setLevel(logging_level)
 
     # Create formatter
-    formatter = logging.Formatter(
-        "[%(asctime)s] [%(levelname)s]  %(message)s", datefmt=Settings.DATETIME_FORMAT
-    )
+    if logging_level == logging.DEBUG:
+        formatter = logging.Formatter(
+            "[%(asctime)s] [%(levelname)s] [%(filename)s] %(message)s",
+            datefmt=Settings.DATETIME_FORMAT + " %z",
+        )
+    else:
+        formatter = logging.Formatter(
+            "[%(asctime)s] [%(levelname)s] %(message)s",
+            datefmt=Settings.DATETIME_FORMAT + " %z",
+        )
 
     # Create console handler
     console_handler = logging.StreamHandler()

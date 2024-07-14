@@ -34,8 +34,11 @@ class Daylio:
     TIME = "time"
     DATE_TIME = "date_time"
     ACTIVITY = "activities"
+    MOOD = "mood"
+    MOOD_SCORE = "mood_score"
+    MOOD_CAT = "mood_category"
 
-    CLEAN_FIELDS = [DATE_TIME, "mood", "note_title", "note", ACTIVITY]
+    CLEAN_FIELDS = [DATE_TIME, MOOD_SCORE, MOOD_CAT, "note_title", "note", ACTIVITY]
 
 
 class Spend:
@@ -148,26 +151,26 @@ class Apple:
         "HeartRate": {
             "timeframe": ["date", "hour"],
             "agg_type": ["Mean"],
-            "fields": ["avg_HR_rate"],
+            "fields": ["avg_hr"],
             "group": ["heart_rate"],
         },
         "HeartRateRecoveryOneMinute": {
             "timeframe": ["date"],
             "agg_type": ["Mean"],
-            "fields": ["avg_1min_HR_recovery"],
+            "fields": ["avg_1min_hr_recovery"],
             "group": ["fitness_metrics"],
         },
         "HeartRateVariabilitySDNN": {
             "timeframe": ["date"],
             "agg_type": ["Mean"],
-            "fields": ["avg_HR_variability"],
+            "fields": ["avg_hr_variability"],
             "group": ["fitness_metrics"],
         },
         "LowHeartRateEvent": {
             "timeframe": ["date", "hour"],
             "agg_type": ["Sum"],
-            "fields": ["low_HR_event"],
-            "group": ["low_HR_events"],
+            "fields": ["low_hr_event"],
+            "group": ["low_hr_events"],
         },
         "MindfulSession": {
             "timeframe": ["date"],
@@ -190,7 +193,7 @@ class Apple:
         "RestingHeartRate": {
             "timeframe": ["date"],
             "agg_type": ["Mean"],
-            "fields": ["avg_resting_HR"],
+            "fields": ["avg_resting_hr"],
             "group": ["fitness_metrics"],
         },
         "RunningGroundContactTime": {
@@ -262,7 +265,7 @@ class Apple:
         "WalkingHeartRateAverage": {
             "timeframe": ["date"],
             "agg_type": ["Mean"],
-            "fields": ["walking_avg_HR"],
+            "fields": ["walking_avg_hr"],
             "group": ["walking_metrics"],
         },
         "WalkingSpeed": {
@@ -438,6 +441,8 @@ class Strava:
     SPORT = "sport_type"
     MOVE_TIME = "moving_time"
     ELAP_TIME = "elapsed_time"
+    AVG_SPEED = "average_speed"
+    MAX_SPEED = "max_speed"
 
     LEGACY_GEAR = "gear.name"
     GEAR_NAME = "gear_name"
