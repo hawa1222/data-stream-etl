@@ -94,7 +94,7 @@ def main():
 
     try:
         tree = file_manager.load_file(
-            FileDirectory.MANUAL_EXPORT_PATH, Apple.XML_DATA, "xml"
+            FileDirectory.SOURCE_DATA_PATH, Apple.XML_DATA, "xml"
         )
         root = tree.getroot()
 

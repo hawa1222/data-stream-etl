@@ -19,7 +19,7 @@ def apple_extractor():
         file_manager = FileManager()
 
         tree = file_manager.load_file(
-            FileDirectory.MANUAL_EXPORT_PATH, Apple.XML_DATA, "xml"
+            FileDirectory.SOURCE_DATA_PATH, Apple.XML_DATA, "xml"
         )  # Load Apple Health XML file
 
         root = tree.getroot()  # Get root of XML tree

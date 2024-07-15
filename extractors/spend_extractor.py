@@ -26,7 +26,7 @@ def spend_extractor():
             logger.info(f"Successfully fetched {len(spend_data)} total entries")
         else:
             spend_data = file_manager.load_file(
-                FileDirectory.MANUAL_EXPORT_PATH,
+                FileDirectory.SOURCE_DATA_PATH,
                 Spend.DATA_KEY,
                 extension="xlsm",
                 sheet_name=Spend.RAW_SHEET_NAME,

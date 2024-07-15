@@ -43,3 +43,6 @@ setup_cron.sh
 
 # But not these files:
 !/documentation/SQL Schema.xlsx
+
+# ignore move_data inside utlity folder
+/utility/move_data/

@@ -28,7 +28,7 @@ def daylio_extractor():
             logger.info(f"Successfully fetched {len(daylio_df)} total entries")
         else:
             daylio_df = file_manager.load_file(
-                FileDirectory.MANUAL_EXPORT_PATH, Daylio.DATA_KEY, "csv"
+                FileDirectory.SOURCE_DATA_PATH, Daylio.DATA_KEY, "csv"
             )  # Load Daylio data
 
             daylio_df = CleanData.clean_data(daylio_df, 5)

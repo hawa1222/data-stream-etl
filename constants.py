@@ -12,9 +12,7 @@ class FileDirectory:
 
     ROOT_DIRECTORY = os.path.abspath(os.path.join(os.path.dirname(__file__), "."))
     ENV_PATH = os.path.join(ROOT_DIRECTORY, ".env_dev")
-    MANUAL_EXPORT_PATH = (
-        "/Users/hadid/Library/Mobile Documents/com~apple~CloudDocs/Shared/ETL"
-    )
+    SOURCE_DATA_PATH = os.path.join(ROOT_DIRECTORY, "data", "source_data")
     RAW_DATA_PATH = os.path.join(ROOT_DIRECTORY, "data", "raw_data")
     CLEAN_DATA_PATH = os.path.join(ROOT_DIRECTORY, "data", "clean_data")
     DOCUMENTATION_PATH = os.path.join(ROOT_DIRECTORY, "documentation/docs")

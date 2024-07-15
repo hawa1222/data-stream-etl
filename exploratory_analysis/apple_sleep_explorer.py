@@ -14,7 +14,7 @@ logger = setup_logging()
 file_manager = FileManager()
 
 # Load the Apple Health export.xml file from iCloud
-tree = file_manager.load_file(FileDirectory.MANUAL_EXPORT_PATH, Apple.XML_DATA, "xml")
+tree = file_manager.load_file(FileDirectory.SOURCE_DATA_PATH, Apple.XML_DATA, "xml")
 
 # Get the root element of the XML tree
 root = tree.getroot()

@@ -18,11 +18,16 @@ STRAVA_CLIENT_SECRET = os.environ.get("STRAVA_CLIENT_SECRET")
 STRAVA_ACCESS_TOKEN = os.environ.get("STRAVA_ACCESS_TOKEN")
 STRAVA_REFRESH_TOKEN = os.environ.get("STRAVA_REFRESH_TOKEN")
 
+
 DB_HOST = os.environ.get("MYSQL_HOST", "localhost")
 DB_PORT = os.environ.get("MYSQL_PORT", 3306)
 DB_USER = os.environ.get("MYSQL_USER", "root")
 DB_PASSWORD = os.environ.get("MYSQL_PASSWORD")
 DB_NAME = os.environ.get("MYSQL_DATABASE")
+
+REDIS_HOST = os.environ.get("REDIS_HOST", "localhost")
+REDIS_PORT = os.environ.get("REDIS_PORT", 6379)
+REDIS_DB = os.environ.get("REDIS_DB", 0)
 
 S3_BUCKET = "etl-5h3gn2wqhzfd"
 

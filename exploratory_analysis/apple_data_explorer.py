@@ -14,7 +14,7 @@ logger = setup_logging()
 
 file_manager = FileManager()
 tree = file_manager.load_file(
-    FileDirectory.MANUAL_EXPORT_PATH, "apple_health_export/export.xml"
+    FileDirectory.SOURCE_DATA_PATH, "apple_health_export/export.xml"
 )
 root = tree.getroot()
 

@@ -8,19 +8,20 @@ from datetime import datetime, timedelta
 import pandas as pd
 import redis
 
+from config import REDIS_DB, REDIS_HOST, REDIS_PORT
 from utility.log_manager import setup_logging
 
 logger = setup_logging()
 
 redis_client = redis.Redis(
-    host="localhost",
-    port=6379,
-    db=0,
+    host=REDIS_HOST,
+    port=REDIS_PORT,
+    db=REDIS_DB,
     password=None,
     decode_responses=True,
     socket_connect_timeout=10,
     socket_timeout=10,
-)  # Connect to Redis
+)
 
 
 def get_cached_ids(cache_key):

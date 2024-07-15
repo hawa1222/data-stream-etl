@@ -74,7 +74,7 @@ def youtube_html_extractor():
         file_manager = FileManager()
 
         soup = file_manager.load_file(
-            FileDirectory.MANUAL_EXPORT_PATH, Google.DATA_KEY, "html"
+            FileDirectory.SOURCE_DATA_PATH, Google.DATA_KEY, "html"
         )  # Load HTML file
 
         activities = extract_activities(soup)  # Extract activities from HTML
