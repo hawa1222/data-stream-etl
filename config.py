@@ -11,7 +11,9 @@ import os
 
 from dotenv import load_dotenv
 
-load_dotenv(".env_dev")
+from constants import FileDirectory
+
+load_dotenv(FileDirectory.ENV_PATH)
 
 STRAVA_CLIENT_ID = os.environ.get("STRAVA_CLIENT_ID")
 STRAVA_CLIENT_SECRET = os.environ.get("STRAVA_CLIENT_SECRET")
