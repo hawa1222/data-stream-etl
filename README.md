@@ -1,14 +1,40 @@
-# Personal Data Stream ETL
+# Data Stream ETL
 
-This project is a Python-MySQL ETL pipeline to centralise data from multiple sources into a structured database, enabling advanced data analysis and application development. The project also includes the use of Redis for caching and S3 as a data lake in the extraction phase. Orchestration of the pipeline is done using Airflow.
+This repository contains a Python based ETL pipeline to centralise data from multiple sources into a structured database, enabling data analysis and application development. The project includes the use of Redis for caching, AWS S3 and MySQL for data storage and Airflow for scheduling and monitoring.
 
-## Project Objectives
+## Table of Contents
+
+- [Data Stream ETL](#data-stream-etl)
+  - [Table of Contents](#table-of-contents)
+  - [Project Outline](#project-outline)
+    - [Data Sources](#data-sources)
+    - [Physical Data Model](#physical-data-model)
+  - [Project Architecture](#project-architecture)
+    - [Data Flow Diagram](#data-flow-diagram)
+  - [Requirements](#requirements)
+  - [Setup Instructions](#setup-instructions)
+  - [Usage](#usage)
+
+## Project Outline
 
 - Establish a comprehensive personal data repository, laying the foundation for developing personalised applications and dashboards with the ability to query historical data.
 - Utilise a range of technologies such as Python, MySQL, API integration, HTML scraping, Redis, S3, and Airflow.
-- Implement diverse data extraction techniques such as API calls, manual exports, HTML scraping, and utilise Redis for caching and S3 as a data lake.
-- Develop a modular pipeline for scalable processing.
-- Integrate data from various formats including Excel, CSV, JSON, XML into distinct MySQL tables.
+- Implement diverse data extraction techniques such as API calls, HTML scraping, and manual exports
+- Design physical data models to store data in a structured format.
+- Integrate data from various formats including CSV, JSON, XML into distinct MySQL tables.
+- Develop a modular pipeline for scalable data integration and transformation.
+
+### Data Sources
+
+- **Apple Health**: Large XML file covering walking metrics, daily activity, blood glucose levels, heart rate, fitness metrics, heart rate metrics, running metrics, sleep analysis, steps, and more.
+- **Strava**: JSON data covering performance metrics, sport types, equipment information, and activity details.
+- **YouTube**: JSON data covering YouTube likes/dislikes, subscriptions, etc.
+- **Daylio**: CSV data covering mood tracking, activities, and notes.
+- **Spend**: CSV data covering 6+ years of financial transactions.
+
+### Physical Data Model
+
+![MySQL Schema Diagram](./diagrams/data_stream_db.png)
 
 ## Project Architecture
 
@@ -18,58 +44,98 @@ This project is a Python-MySQL ETL pipeline to centralise data from multiple sou
 - **Utility**: Contains helper functions and classes for database interactions (`DatabaseHandler`) and file management (`FileManager`).
 - **Validation**: Script for post-load data validation to ensure data integrity and consistency.
 
-### Data
+### Data Flow Diagram
 
-- **Apple Health**: Includes datasets like walking metrics, daily activity, blood glucose levels, heart rate, fitness metrics, heart rate metrics, running metrics, sleep analysis, and steps.
-- **Strava**: Sports activity data covering performance metrics, sport types, equipment information, and activity details.
-- **YouTube**: Data related to YouTube likes/dislikes, subscriptions, etc.
-- **Daylio**: Mood and activity tracking information.
-- **Spend**: Financial data tracked over 6 years.
+![Airflow Dag Diagram](./diagrams/etl_dag.png)
 
-## Technologies Used
+## Requirements
 
-- Python (version 3.12)
+- Python (version 3.12.3)
 - MySQL (version 8.3.0)
-- Redis (version 6.0.0)
-- S3 Bucket (AWS)
-- Airflow (version 2.2.0)
+- Redis (version 7.2.5)
+- AWS S3
+- Airflow (version 2.9.2)
 
 ## Setup Instructions
 
-1. Clone the Repository:
+Clone the Repository:
 
-    ```
-    git clone https://github.com/hawa1222/data-stream-etl.git
-    ```
+```bash
+git clone https://github.com/hawa1222/data-stream-etl.git
+cd data-stream-etl
+```
 
-2. Navigate to the project directory:
+Set up Python environment:
 
-    ```
-    cd data-stream-etl
-    ```
+``` bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
 
-3. Set up your environment:
+Set up MySQL:
 
-    Make the setup script executable (if it's not already):
+- Install MySQL server and create a new database.
+- Update the database connection details in the `config.py` file.
 
-    ```
-    chmod +x setup_environment.sh
-    ```
+Set up Redis:
 
-    Then run the `setup_environment.sh` script to create a virtual environment and install all necessary packages. Execute this script from the root directory of the project:
+- Install Redis server and start the service.
+- Update the Redis connection details in the `config.py` file.
 
-    ```
-    ./setup_environment.sh
-    ```
+Set up AWS S3:
 
-4. Create a `.env` file in the project root directory and provide the environment variables as specified in `.env_template`.
+- Create an AWS account and set up an S3 bucket.
+- Update the AWS S3 connection details in the `config.py` file.
+
+Set up Airflow:
+
+- Installed in requirements.txt or install manually:
+
+``` bash
+pip install apache-airflow
+```
+
+- Initialise the Airflow database:
+
+``` bash
+airflow db migrate
+```
+
+- Create an Airflow user:
+
+``` bash
+airflow users create \
+    --username admin \
+    --firstname admin \
+    --lastname admin \
+    --role Admin \
+    --email
+```
+
+- Start the Airflow web server:
+
+``` bash
+airflow webserver --port 8080
+```
+
+- Start the Airflow scheduler:
+
+``` bash
+airflow scheduler
+```
+
+- Access the Airflow web interface at `http://localhost:8080`.
+
+Configure environment variables:
+
+- Copy .env_template to .env
+- Fill in all required variables in .env
 
 ## Usage
 
-### Manual Execution
-
 To execute the ETL process manually, run the following command in your terminal:
 
-```
+```bash
 python main.py
 ```
