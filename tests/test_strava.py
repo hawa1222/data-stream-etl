@@ -20,7 +20,7 @@ load_dotenv(".env_dev")
 
 def test_refresh_access_token(requests_mock):
     # Test scenario 1: Successful token refresh
-    logger.info("!!!!!! Testing refresh_access_token function: Successs Scenario")
+    logger.debug("!!!!!! Testing refresh_access_token function: Successs Scenario")
     requests_mock.post(
         "https://www.strava.com/oauth/token",
         json={"access_token": "new_access_token", "refresh_token": "new_refresh_token"},
@@ -37,7 +37,7 @@ def test_refresh_access_token(requests_mock):
     assert os.getenv("STRAVA_REFRESH_TOKEN") == "new_refresh_token"
 
     # Test scenario 2: HTTP error occurs (status code 400)
-    logger.info("!!!!!! Testing refresh_access_token function: HTTP Error Scenario")
+    logger.debug("!!!!!! Testing refresh_access_token function: HTTP Error Scenario")
     requests_mock.post(
         "https://www.strava.com/oauth/token",
         status_code=400,
@@ -54,7 +54,7 @@ def test_refresh_access_token(requests_mock):
     assert exc_info.value.code == 1
 
     # Test scenario 3: Other error occurs
-    logger.info("!!!!!! Testing refresh_access_token function: Timeout Scenario")
+    logger.debug("!!!!!! Testing refresh_access_token function: Timeout Scenario")
     requests_mock.post(
         "https://www.strava.com/oauth/token",
         exc=requests.exceptions.Timeout("Timeout occurred"),
@@ -72,10 +72,10 @@ def test_refresh_access_token(requests_mock):
 
 def test_api_error_handler():
     # Test scenario 1: Rate limit exceeded (status code 429)
-    logger.info("!!!!!! Testing api_error_handler function: Rate Limit Scenario")
+    logger.debug("!!!!!! Testing api_error_handler function: Rate Limit Scenario")
     assert api_error_handler(429)
 
-    logger.info("!!!!!! Testing api_error_handler function: Unauthorised Scenario")
+    logger.debug("!!!!!! Testing api_error_handler function: Unauthorised Scenario")
     # Test scenario 2: Unauthorised (status code 401)
     with patch(
         "extractors.strava_extractor.refresh_access_token",
@@ -84,11 +84,11 @@ def test_api_error_handler():
         assert api_error_handler(401)
 
     # Test scenario 3: Not found (status code 404)
-    logger.info("!!!!!! Testing api_error_handler function: Not Found Scenario")
+    logger.debug("!!!!!! Testing api_error_handler function: Not Found Scenario")
     assert not api_error_handler(404, activity_id="1234")
 
     # Test scenario 4: Other 4xx status code
-    logger.info("!!!!!! Testing api_error_handler function: Other Error Scenarios")
+    logger.debug("!!!!!! Testing api_error_handler function: Other Error Scenarios")
     with pytest.raises(SystemExit) as exc_info:
         api_error_handler(400)
     assert exc_info.value.code == 1
@@ -101,7 +101,7 @@ def mock_headers():
 
 def test_get_activity_ids(requests_mock, mock_headers):
     # Test scenario 1: Single page of results
-    logger.info("!!!!!! Testing get_activity_ids function: Single Page Scenario")
+    logger.debug("!!!!!! Testing get_activity_ids function: Single Page Scenario")
     requests_mock.get(
         "https://www.strava.com/api/v3/athlete/activities",
         json=[{"id": 1234}, {"id": 5678}],
@@ -112,7 +112,7 @@ def test_get_activity_ids(requests_mock, mock_headers):
     assert requests_mock.call_count == 1
 
     # Test scenario 2: Multiple pages of results
-    logger.info("!!!!!! Testing get_activity_ids function: Multiple Page Scenario")
+    logger.debug("!!!!!! Testing get_activity_ids function: Multiple Page Scenario")
     requests_mock.get(
         "https://www.strava.com/api/v3/athlete/activities",
         [
@@ -128,7 +128,7 @@ def test_get_activity_ids(requests_mock, mock_headers):
     assert requests_mock.call_count == 4
 
     # Test scenario 3: Rate limit exceeded
-    logger.info("!!!!!! Testing get_activity_ids function: Rate Limit Scenario")
+    logger.debug("!!!!!! Testing get_activity_ids function: Rate Limit Scenario")
     requests_mock.get(
         "https://www.strava.com/api/v3/athlete/activities",
         [
@@ -150,7 +150,7 @@ def test_get_activity_ids(requests_mock, mock_headers):
     mock_error_handler.assert_called_once_with(429)
 
     # Test scenario 4: Unauthorised
-    logger.info("!!!!!! Testing get_activity_ids function: Unauthorised Scenario")
+    logger.debug("!!!!!! Testing get_activity_ids function: Unauthorised Scenario")
     requests_mock.get(
         "https://www.strava.com/api/v3/athlete/activities",
         [
@@ -164,9 +164,7 @@ def test_get_activity_ids(requests_mock, mock_headers):
     with patch(
         "extractors.strava_extractor.api_error_handler", side_effect=api_error_handler
     ) as mock_error_handler:
-        with patch(
-            "extractors.strava_extractor.refresh_access_token", return_value="new_token"
-        ):
+        with patch("extractors.strava_extractor.refresh_access_token", return_value="new_token"):
             result = get_activity_ids(mock_headers)
 
     assert len(result) == 75
@@ -175,10 +173,8 @@ def test_get_activity_ids(requests_mock, mock_headers):
     mock_error_handler.assert_called_once_with(401)
 
     # Test scenario 5: Not found
-    logger.info("!!!!!! Testing get_activity_ids function: Not Found Scenario")
-    requests_mock.get(
-        "https://www.strava.com/api/v3/athlete/activities", status_code=500
-    )
+    logger.debug("!!!!!! Testing get_activity_ids function: Not Found Scenario")
+    requests_mock.get("https://www.strava.com/api/v3/athlete/activities", status_code=500)
     with pytest.raises(SystemExit) as exc_info:
         get_activity_ids(mock_headers)
 
@@ -187,9 +183,7 @@ def test_get_activity_ids(requests_mock, mock_headers):
 
 def test_strava_extractor_comprehensive(requests_mock, mock_headers):
     # Mock the cache
-    with patch(
-        "extractors.strava_extractor.cache_data.get_cached_ids", return_value=set()
-    ):
+    with patch("extractors.strava_extractor.cache_data.get_cached_ids", return_value=set()):
         # Mock the API calls
         requests_mock.get(
             "https://www.strava.com/api/v3/athlete/activities",
@@ -220,16 +214,12 @@ def test_strava_extractor_comprehensive(requests_mock, mock_headers):
                     "extractors.strava_extractor.download_data_local.update_local_data"
                 ) as mock_update:
                     # Mock caching of new IDs
-                    with patch(
-                        "extractors.strava_extractor.cache_data.cache_ids"
-                    ) as mock_cache:
+                    with patch("extractors.strava_extractor.cache_data.cache_ids") as mock_cache:
                         # Run the extractor
                         strava_extractor()
 
         # Assertions
-        assert (
-            requests_mock.call_count == 104
-        )  # 4 for activity IDs, 100 for individual activities
+        assert requests_mock.call_count == 104  # 4 for activity IDs, 100 for individual activities
         mock_refresh.assert_called_once()
         mock_upload.assert_called_once()
         mock_update.assert_called_once()
@@ -260,13 +250,9 @@ def test_strava_extractor(requests_mock):
     with patch(
         "extractors.strava_extractor.cache_data.get_cached_ids", return_value=set()
     ) as mock_get_cache:
-        with patch(
-            "extractors.strava_extractor.cache_data.cache_ids"
-        ) as mock_set_cache:
+        with patch("extractors.strava_extractor.cache_data.cache_ids") as mock_set_cache:
             # Mock the data storage
-            with patch(
-                "extractors.strava_extractor.upload_data_s3.post_data_to_s3"
-            ) as mock_s3:
+            with patch("extractors.strava_extractor.upload_data_s3.post_data_to_s3") as mock_s3:
                 with patch(
                     "extractors.strava_extractor.download_data_local.update_local_data"
                 ) as mock_local:
@@ -275,9 +261,7 @@ def test_strava_extractor(requests_mock):
 
                     # Assert that the expected side effects occurred
                     mock_get_cache.assert_called_once()
-                    mock_set_cache.assert_called_once_with(
-                        "strava_activity_ids", {"1", "2"}
-                    )
+                    mock_set_cache.assert_called_once_with("strava_activity_ids", {"1", "2"})
                     mock_s3.assert_called_once()
                     mock_local.assert_called_once()
 
