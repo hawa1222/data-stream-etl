@@ -2,19 +2,6 @@
 
 This repository contains a Python based ETL pipeline to centralise data from multiple sources into a structured database, enabling data analysis and application development. The project includes the use of Redis for caching, AWS S3 and MySQL for data storage and Airflow for scheduling and monitoring.
 
-## Table of Contents
-
-- [Data Stream ETL](#data-stream-etl)
-  - [Table of Contents](#table-of-contents)
-  - [Project Outline](#project-outline)
-    - [Data Sources](#data-sources)
-    - [Physical Data Model](#physical-data-model)
-  - [Project Architecture](#project-architecture)
-    - [Data Flow Diagram](#data-flow-diagram)
-  - [Requirements](#requirements)
-  - [Setup Instructions](#setup-instructions)
-  - [Usage](#usage)
-
 ## Project Outline
 
 - Establish a comprehensive personal data repository, laying the foundation for developing personalised applications and dashboards with the ability to query historical data.
