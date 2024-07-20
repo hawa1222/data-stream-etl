@@ -39,15 +39,12 @@ setup_cron.sh
 /credentials/
 /data/
 /logs/
-/documentation/*
+/utility/data_setup/
+/airflow/config/
 
-# But not these files:
+/documentation/*
 !/documentation/SQL Schema.xlsx
 
-# ignore move_data inside utlity folder
-/utility/data_setup/
-
-/airflow/config/
 /tests/api_call.ipynb
 
 /exploratory_analysis/*
