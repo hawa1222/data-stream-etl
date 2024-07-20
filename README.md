@@ -21,7 +21,7 @@ This repository contains a Python based ETL pipeline to centralise data from mul
 
 ### Physical Data Model
 
-![MySQL Schema Diagram](./diagrams/data_stream_db.png)
+![MySQL Schema Diagram](./diagrams/schema.png)
 
 ## Project Architecture
 

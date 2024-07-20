@@ -46,3 +46,5 @@ setup_cron.sh
 
 # ignore move_data inside utlity folder
 /utility/data_setup/
+
+/airflow/config/
