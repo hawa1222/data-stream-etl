@@ -11,17 +11,14 @@ logger = setup_logging()
 
 def daylio_extractor():
     """
-    Main function to load Daylio data, drop NAs, standarise field names, update cache,
-    save to S3 and local storage.
+    Main function to load Daylio data, drop NAs, standarise field names, update cache, save to S3 and local storage.
     """
     logger.info("!!!!!!!!!!!! daylio_extractor.py !!!!!!!!!!!")
 
     try:
         file_manager = FileManager()
 
-        cached_data = redis_manager.get_cached_data(
-            Daylio.DATA_KEY
-        )  # Fetch cached data
+        cached_data = redis_manager.get_cached_data(Daylio.DATA_KEY)
 
         if cached_data is not None:  # Check cached data exists
             daylio_df = pd.DataFrame(cached_data)  # Convert to df
@@ -29,7 +26,7 @@ def daylio_extractor():
         else:
             daylio_df = file_manager.load_file(
                 FileDirectory.SOURCE_DATA_PATH, Daylio.DATA_KEY, "csv"
-            )  # Load Daylio data
+            )
 
             daylio_df = CleanData.clean_data(daylio_df, 5)
 

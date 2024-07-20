@@ -21,7 +21,7 @@ def process_activity(df):
         pd.DataFrame: Transformed DataFrame.
     """
     try:
-        logger.info("Processing 'ActivitySummary' DataFrame...")
+        logger.debug("Processing 'ActivitySummary' DataFrame...")
 
         df_copy = df.copy()
 
@@ -44,9 +44,7 @@ def process_activity(df):
         return df_copy
 
     except Exception as e:
-        logger.error(
-            f"Error occurred while processing 'ActivitySummary' DataFrame: {str(e)}"
-        )
+        logger.error(f"Error occurred while processing 'ActivitySummary' DataFrame: {str(e)}")
         return pd.DataFrame()
 
 
@@ -61,7 +59,7 @@ def enrich_record(df):
         pd.DataFrame: Transformed DataFrame.
     """
 
-    logger.info("Enriching 'Record' DataFrame...")
+    logger.debug("Enriching 'Record' DataFrame...")
 
     try:
         df = df.copy()
@@ -72,12 +70,12 @@ def enrich_record(df):
             Apple.END_DATE,
         ]
 
-        logger.info("Converting date columns to datetime format...")
-        logger.info(
+        logger.debug("Converting date columns to datetime format...")
+        logger.debug(
             f"Two date example values before transformation: {df[date_cols[0]].head(2).to_dict()}"
         )
         df[date_cols] = df[date_cols].apply(pd.to_datetime)
-        logger.info(
+        logger.debug(
             f"Two date example values after transformation: {df[date_cols[0]].head(2).to_dict()}"
         )
 
@@ -95,9 +93,9 @@ def enrich_record(df):
 
         df[Apple.SOURCE_NAME] = df[Apple.SOURCE_NAME].str.strip()
 
-        logger.info("Added new columns to 'Record' DataFrame")
+        logger.debug("Added new columns to 'Record' DataFrame")
 
-        logger.info("Successfully enriched 'Record' DataFrame")
+        logger.debug("Successfully enriched 'Record' DataFrame")
 
         return df
 
@@ -121,14 +119,14 @@ def process_record(df):
     """
 
     try:
-        logger.info("Processing 'Record' DataFrame...")
+        logger.debug("Processing 'Record' DataFrame...")
 
         transformed_df = enrich_record(df)
 
         unique_types = set(transformed_df[Apple.TYPE_FIELD].unique())  # Unique types
 
         type_dfs = {}
-        logger.info("Creating dictionary of DataFrames based on unique types...")
+        logger.debug("Creating dictionary of DataFrames based on unique types...")
 
         for elem in Apple.RECORD_TYPE:
             if elem in unique_types:
@@ -136,13 +134,19 @@ def process_record(df):
                 filtered_df = transformed_df[transformed_df[Apple.TYPE_FIELD] == elem]
                 type_dfs[var_name] = filtered_df
             else:
-                logger.info(f"The specified type '{elem}' does not exist in DataFrame.")
+                logger.debug(f"The specified type '{elem}' does not exist in DataFrame.")
 
-        logger.info(
-            f"Dimensions of DataFrames in 'Record' dictionary: {[(key, df.shape) for key, df in type_dfs.items()]}"
+        type_counts = {key: df.shape for key, df in type_dfs.items()}
+        formatted_type_counts = "\n".join(
+            [f"{category}: {count}" for category, count in type_counts.items()]
+        )
+        logger.debug(
+            f"Dimensions of DataFrames in 'Record' dictionary:\n\n{formatted_type_counts}\n"
         )
 
-        logger.info("Successfully processed 'Record' DataFrame")
+        logger.info(
+            "Successfully processed 'Record' DataFrame into dictionary by unique select 'type' values"
+        )
 
         return type_dfs
 
@@ -158,9 +162,7 @@ def subset_by_priority(df):
     df = df.copy()
 
     df[Apple.PRIORITY] = df[Apple.SOURCE_NAME].map(Apple.PRIORITY_DICT)  # Map priority
-    df.sort_values(
-        by=[Apple.CREATION_DATE, Apple.PRIORITY], inplace=True
-    )  # Sort by date
+    df.sort_values(by=[Apple.CREATION_DATE, Apple.PRIORITY], inplace=True)  # Sort by date
     df = df[
         df[Apple.PRIORITY] == df.groupby(Apple.DATE)[Apple.PRIORITY].transform("min")
     ]  # Keep rows with minimum priority for each date
@@ -243,7 +245,7 @@ def transform_record_dicts(record_dict):
         Dict[str, DataFrame]: Dictionary containing transformed DataFrames.
     """
 
-    logger.info("Transforming record dictionary...")
+    logger.debug("Transforming record dictionary...")
 
     new_dataframe_dict = {}
 
@@ -287,11 +289,9 @@ def transform_record_dicts(record_dict):
                 agg_dict = {field: (Apple.VALUE, agg_type.lower()) for field in fields}
                 new_df = new_df.groupby(timeframes).agg(**agg_dict).reset_index()
 
-            new_dataframe_dict[df_name] = (
-                new_df  # Add transformed DataFrame to dictionary
-            )
+            new_dataframe_dict[df_name] = new_df  # Add transformed DataFrame to dictionary
 
-            logger.info(f"Successfully transformed {df_name} DataFrame in dictionary")
+            logger.debug(f"Successfully transformed {df_name} DataFrame in dictionary")
 
         except Exception as e:
             logger.error(f"Error occurred while transforming {df_name}: {str(e)}")
@@ -313,7 +313,7 @@ def join_data_by_group(complete_dict):
         dict: Dictionary containing joined DataFrames.
     """
 
-    logger.info("Grouping and joining DataFrames in complete_dict...")
+    logger.debug("Grouping and joining DataFrames in complete_dict...")
 
     merger_logic = {
         **Apple.RECORD_TRANSFORMATION_LOGIC,
@@ -335,9 +335,7 @@ def join_data_by_group(complete_dict):
                 )  # Round float columns to 2 decimal places
 
             if df_a.empty or key not in merger_logic:
-                logger.info(
-                    f"Skipping key {key} because it is empty or not in configuration."
-                )
+                logger.debug(f"Skipping key {key} because it is empty or not in configuration.")
                 continue
 
             group = merger_logic[key]["group"][0]  # Get group key
@@ -355,8 +353,12 @@ def join_data_by_group(complete_dict):
             logger.error(f"Error occurred while joining {key} DataFrame: {str(e)}")
             raise
 
-    logger.info(
-        f"Dimensions of DataFrames in complete_dict after processing: {[(key, df.shape) for key, df in joined_data_by_group.items()]}"
+    type_counts = dict((key, df.shape) for key, df in joined_data_by_group.items())
+    formatted_type_counts = "\n".join(
+        [f"{category}: {count}" for category, count in type_counts.items()]
+    )
+    logger.debug(
+        f"Dimensions of DataFrames in complete_dict after processing::\n\n{formatted_type_counts}\n"
     )
 
     return joined_data_by_group
@@ -375,9 +377,7 @@ def apple_transformer():
         records = file_manager.load_file(
             FileDirectory.RAW_DATA_PATH, Apple.RECORD_DATA, "csv", low_memory=False
         )
-        activity = file_manager.load_file(
-            FileDirectory.RAW_DATA_PATH, Apple.ACTIVITY_DATA, "csv"
-        )
+        activity = file_manager.load_file(FileDirectory.RAW_DATA_PATH, Apple.ACTIVITY_DATA, "csv")
 
         record_dict = process_record(records)
         record_dict_transformed = transform_record_dicts(record_dict)
@@ -389,18 +389,16 @@ def apple_transformer():
         joined_data_by_group = join_data_by_group(record_dict_transformed)
 
         for key, df in joined_data_by_group.items():
-            logger.info(f"Rounding floats in {key} DataFrame...")
+            logger.debug(f"Rounding floats in {key} DataFrame...")
             joined_data_by_group[key] = round_floats(df)
 
         for col in [Apple.BED_TIME, Apple.AWAKE_TIME]:
             df = joined_data_by_group["sleep"]
-            logger.info("Cleaning sleep data...")
-            logger.info(f"Stardardising {col} field...")
-            logger.info(f"Sample before parsing: {df[col].head(2).to_list()}")
-            df[col] = df[col].apply(
-                lambda x: parse_date(x.strftime("%Y-%m-%d %H:%M:%S%z"))
-            )
-            logger.info(f"Sample after parsing: {df[col].head(2).to_list()}")
+            logger.debug("Cleaning sleep data...")
+            logger.debug(f"Stardardising {col} field...")
+            logger.debug(f"Sample before parsing: {df[col].head(2).to_list()}")
+            df[col] = df[col].apply(lambda x: parse_date(x.strftime("%Y-%m-%d %H:%M:%S%z")))
+            logger.debug(f"Sample after parsing: {df[col].head(2).to_list()}")
         df = CleanData.clean_data(df)
 
         for key, df in joined_data_by_group.items():

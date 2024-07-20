@@ -43,7 +43,7 @@ def refresh_access_token(token_url, client_id, client_secret, refresh_token):
         Exception: If error occurs during access token refresh process.
     """
 
-    logger.info("Access token expired. Attempting to update access_token...")
+    logger.debug("Access token expired. Attempting to update access_token...")
 
     payload = {
         "client_id": client_id,
@@ -62,12 +62,12 @@ def refresh_access_token(token_url, client_id, client_secret, refresh_token):
         logger.info("Successfully updated access_token")
 
         auth_headers["Authorization"] = f"Bearer {new_access_token}"
-        logger.info("Succesfully updated authorisation header")
+        logger.debug("Succesfully updated authorisation header")
 
         new_refresh_token = json_response.get("refresh_token", refresh_token)
         if new_refresh_token != refresh_token:
             set_key(FileDirectory.ENV_PATH, "STRAVA_REFRESH_TOKEN", new_refresh_token)
-            logger.info("Successfully updated refresh_token")
+            logger.debug("Successfully updated refresh_token")
 
         reload(config)  # Reload config to update access token
 
@@ -107,7 +107,7 @@ def api_error_handler(status_code, activity_id=None):
                 f"Rate limit exceeded. Sleeping for {int(APIHandler.RATE_LIMIT_SLEEP_TIME/60)} minutes..."
             )
             time.sleep(APIHandler.RATE_LIMIT_SLEEP_TIME)  # Sleep for 15 minutes
-            logger.info("Retrying request after rate limit sleep")
+            logger.debug("Retrying request after rate limit sleep")
 
             return True
 
@@ -150,9 +150,7 @@ def get_activity_ids(headers):
     """
 
     current_datetime = datetime.now().strftime(Settings.DATETIME_FORMAT)
-    logger.info(
-        f"Fetching all activity IDs as of {current_datetime} from Strava API..."
-    )
+    logger.debug(f"Fetching all activity IDs as of {current_datetime} from Strava API...")
 
     page = 1
     all_activity_ids = set()
@@ -175,13 +173,13 @@ def get_activity_ids(headers):
         activity_ids = {str(activity["id"]) for activity in activities}
         all_activity_ids.update(activity_ids)  # Add new activity_ids to set
 
-        logger.info(f"Fetched page {page} of activity_ids")
+        logger.debug(f"Fetched page {page} of activity_ids")
         page += 1
 
         if len(activities) < Settings.ITEMS_PER_PAGE:
             break  # Exit loop if less than 50 activities on page
 
-    logger.info(f"Successfully fetched {len(all_activity_ids)} activity IDs")
+    logger.info(f"Successfully fetched {len(all_activity_ids)} activity IDs from Strava API")
 
     return all_activity_ids
 
@@ -198,7 +196,7 @@ def get_activity_data(new_activity_ids, headers):
         list: List containing detailed data for each activity in JSON format.
     """
 
-    logger.info("Fetching complete data for new activity IDs from Strava API...")
+    logger.debug("Fetching complete data for new activity IDs from Strava API...")
 
     activity_data_json = []
 
@@ -213,13 +211,10 @@ def get_activity_data(new_activity_ids, headers):
                 continue  # Retry request for same page
 
             activity_data_json.append(response.json())  # Append JSON data to list
-            logger.info(
-                "Successfully fetched activity data for activity %s",
-                activity_id,
-            )
+            logger.debug("Successfully fetched activity data for activity %s", activity_id)
             break  # Exit while loop when request is successful
 
-    logger.info(f"{len(activity_data_json)} new activities data fetched")
+    logger.info(f"{len(activity_data_json)} new detailed activities data fetched from Strava API")
 
     return activity_data_json
 
@@ -255,6 +250,7 @@ def strava_extractor():
                 new_activity_data_df,
             )
             redis_manager.update_cached_ids(Strava.ID_KEY, new_activity_ids)
+            redis_manager.update_cached_data(Strava.DATA_KEY, new_activity_data_df)
         else:
             logger.info("No new activities found in Strava API")
 

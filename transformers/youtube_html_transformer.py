@@ -23,12 +23,12 @@ def manipulate_activity_data(df):
     """
 
     try:
-        logger.info("Cleaning activity data...")
+        logger.debug("Cleaning activity data...")
 
-        logger.info(f"Stardardising {Google.DATE} field...")
-        logger.info(f"Sample before cleaning: {df[Google.DATE].head(2).to_list()}")
+        logger.debug(f"Stardardising {Google.DATE} field...")
+        logger.debug(f"Sample before cleaning: {df[Google.DATE].head(2).to_list()}")
         df[Google.DATE] = df[Google.DATE].apply(parse_date)
-        logger.info(f"Sample after cleaning: {df[Google.DATE].head(2).to_list()}")
+        logger.debug(f"Sample after cleaning: {df[Google.DATE].head(2).to_list()}")
 
         df[Google.CONTENT_ID] = (
             df[Google.CONTENT_URL]
@@ -46,7 +46,7 @@ def manipulate_activity_data(df):
             df[Google.CHANNEL_URL].str.split("channel/").str[1].str.split("&").str[0]
         )  # Extract channel_id from channel_url
 
-        logger.info(
+        logger.debug(
             f"Succesfully created '{Google.CONTENT_ID}', '{Google.CONTENT_THUMBNAIL}', and '{Google.CHANNEL_ID}' fields"
         )
 
@@ -75,13 +75,11 @@ def youtube_html_transformer():
     try:
         file_manager = FileManager()
 
-        parsed_html = file_manager.load_file(
-            FileDirectory.RAW_DATA_PATH, Google.DATA_KEY
-        )
+        parsed_html = file_manager.load_file(FileDirectory.RAW_DATA_PATH, Google.HTML_DATA)
 
         act_df = manipulate_activity_data(parsed_html)
 
-        file_manager.save_file(FileDirectory.CLEAN_DATA_PATH, Google.DATA_KEY, act_df)
+        file_manager.save_file(FileDirectory.CLEAN_DATA_PATH, Google.HTML_DATA, act_df)
 
     except Exception as e:
         logger.error(f"Error occurred in youtube_html_transformer: {str(e)}")

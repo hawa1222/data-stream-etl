@@ -17,10 +17,8 @@ def youtube_loader():
         file_manager = FileManager()
         db_handler = DatabaseHandler(DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME)
 
-        ACTIVITY_DATA = Google.DATA_KEY + "_enriched"
-
         datasets = {
-            ACTIVITY_DATA: {
+            Google.DATA_KEY: {
                 "id": "VARCHAR(70) NOT NULL PRIMARY KEY",
                 "source": "VARCHAR(10)",
                 "activity_type": "VARCHAR(12)",

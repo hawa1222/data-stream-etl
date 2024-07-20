@@ -73,7 +73,7 @@ def apple_loader():
                 "avg_oxg_saturation": "DECIMAL(5,2)",
                 "avg_respiratory_pm": "DECIMAL(5,2)",
             },
-            "apple_low_hr_events": {
+            "apple_low_hr_event": {
                 "date": "DATE NOT NULL",
                 "hour": "TINYINT UNSIGNED NOT NULL",
                 "low_hr_event": "TINYINT UNSIGNED",

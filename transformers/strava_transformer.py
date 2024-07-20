@@ -20,12 +20,12 @@ def clean_data(df):
     """
 
     try:
-        logger.info("Cleaning data...")
+        logger.debug("Cleaning data...")
 
-        logger.info(f"Stardardising {Strava.DATE} column...")
-        logger.info(f"Sample before cleaning: {df[Strava.DATE].head(2).to_list()}")
+        logger.debug(f"Stardardising {Strava.DATE} column...")
+        logger.debug(f"Sample before cleaning: {df[Strava.DATE].head(2).to_list()}")
         df[Strava.DATE] = df[Strava.DATE].apply(parse_date)
-        logger.info(f"Sample after cleaning: {df[Strava.DATE].head(2).to_list()}")
+        logger.debug(f"Sample after cleaning: {df[Strava.DATE].head(2).to_list()}")
 
         fields_mapping = {
             Strava.LEGACY_GEAR: Strava.GEAR_NAME,
@@ -34,7 +34,7 @@ def clean_data(df):
             "map.polyline": "map_polyline",
         }
         df = df.rename(columns=fields_mapping)
-        logger.info(
+        logger.debug(
             f"Renamed columns '{', '.join(fields_mapping.keys())}' to '{', '.join(fields_mapping.values())}'"
         )
 
@@ -73,9 +73,7 @@ def strava_transformer():
     try:
         file_manager = FileManager()
 
-        strava_data = file_manager.load_file(
-            FileDirectory.RAW_DATA_PATH, Strava.DATA_KEY
-        )
+        strava_data = file_manager.load_file(FileDirectory.RAW_DATA_PATH, Strava.DATA_KEY)
 
         clean_strava_data = clean_data(strava_data)
 

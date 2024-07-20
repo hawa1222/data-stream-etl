@@ -12,11 +12,11 @@ def clean_date_column(df):
     """
     Cleans date column in DataFrame.
     """
-    logger.info(f"Cleaning '{Spend.DATE}' field...")
+    logger.debug(f"Cleaning '{Spend.DATE}' field...")
 
-    logger.info(f"Sample before cleaning: {df[Spend.DATE].head(2).to_list()}")
+    logger.debug(f"Sample before cleaning: {df[Spend.DATE].head(2).to_list()}")
     df[Spend.DATE] = pd.to_datetime(df[Spend.DATE]).dt.strftime(Settings.DATE_FORMAT)
-    logger.info(f"Sample after cleaning: {df[Spend.DATE].head(2).to_list()}")
+    logger.debug(f"Sample after cleaning: {df[Spend.DATE].head(2).to_list()}")
 
     return df
 

@@ -32,7 +32,7 @@ def clean_data(df):
         DataFrame: Cleaned DataFrame.
     """
 
-    logger.info("Cleaning data...")
+    logger.debug("Cleaning data...")
 
     try:
         df[Daylio.DATE_TIME] = (
@@ -44,12 +44,12 @@ def clean_data(df):
             .str.replace("‚ÄØ", "", regex=False)
         )  # Concatenate date and time fields
 
-        logger.info(f"Stardardising {Daylio.DATE_TIME} field...")
-        logger.info(f"Sample before cleaning: {df[Daylio.DATE_TIME].head(2).to_list()}")
+        logger.debug(f"Stardardising {Daylio.DATE_TIME} field...")
+        logger.debug(f"Sample before cleaning: {df[Daylio.DATE_TIME].head(2).to_list()}")
         df[Daylio.DATE_TIME] = df[Daylio.DATE_TIME].apply(add_uk_timezone)
-        logger.info(f"Sample before parsing: {df[Daylio.DATE_TIME].head(2).to_list()}")
+        logger.debug(f"Sample before parsing: {df[Daylio.DATE_TIME].head(2).to_list()}")
         df[Daylio.DATE_TIME] = df[Daylio.DATE_TIME].apply(parse_date)  # Parse dates
-        logger.info(f"Sample after cleaning: {df[Daylio.DATE_TIME].head(2).to_list()}")
+        logger.debug(f"Sample after cleaning: {df[Daylio.DATE_TIME].head(2).to_list()}")
 
         df[[Daylio.MOOD_SCORE, Daylio.MOOD_CAT]] = df[Daylio.MOOD].str.split(
             "-", expand=True
@@ -77,7 +77,7 @@ def transform_data(df):
         Tuple[DataFrame]: Tuple containing mood & activities DataFrames.
     """
 
-    logger.info("Transforming data...")
+    logger.debug("Transforming data...")
 
     df_mood = (
         df.drop(columns=[Daylio.ACTIVITY])  # Drop 'activities' field

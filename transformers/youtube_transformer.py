@@ -50,32 +50,26 @@ def likes_transformer(df):
         DataFrame: Transformed DataFrame.
     """
     try:
-        logger.info("Transforming likes data...")
+        logger.debug("Transforming likes data...")
 
         df = df.rename(columns=Google.LIKES_MAPPING)
 
         df[Google.SOURCE] = Google.SOURCE_VALUE[0]
         df[Google.ACTIVITY_TYPE] = Google.ACTIVITY_TYPES[0]
 
-        df[Google.CONTENT_URL] = (
-            "https://www.youtube.com/watch?v=" + df[Google.CONTENT_ID]
-        )
-        df[Google.CHANNEL_URL] = (
-            "https://www.youtube.com/channel/" + df[Google.CHANNEL_ID]
-        )
+        df[Google.CONTENT_URL] = "https://www.youtube.com/watch?v=" + df[Google.CONTENT_ID]
+        df[Google.CHANNEL_URL] = "https://www.youtube.com/channel/" + df[Google.CHANNEL_ID]
 
-        logger.info(f"Stardardising {Google.DATE} field...")
-        logger.info(f"Sample before cleaning: {df[Google.DATE].head(2).to_list()}")
+        logger.debug(f"Stardardising {Google.DATE} field...")
+        logger.debug(f"Sample before cleaning: {df[Google.DATE].head(2).to_list()}")
         df[Google.DATE] = df[Google.DATE].apply(parse_date)
-        logger.info(f"Sample after cleaning: {df[Google.DATE].head(2).to_list()}")
+        logger.debug(f"Sample after cleaning: {df[Google.DATE].head(2).to_list()}")
 
         df[Google.CONTENT_THUMBNAIL] = df.apply(get_best_url, axis=1)
 
         df = df[list(Google.LIKES_MAPPING.values())]
 
-        logger.info(
-            f"Renamed / added fields: [{', '.join(Google.LIKES_MAPPING.values())}]"
-        )
+        logger.debug(f"Renamed / added fields: [{', '.join(Google.LIKES_MAPPING.values())}]")
 
         logger.info("Successfully transformed likes data")
 
@@ -104,29 +98,25 @@ def subs_transformer(df):
         DataFrame: Transformed DataFrame.
     """
     try:
-        logger.info("Transforming subs data...")
+        logger.debug("Transforming subs data...")
 
         df = df.rename(columns=Google.SUBS_MAPPING)
 
         df[Google.SOURCE] = Google.SOURCE_VALUE[0]
         df[Google.ACTIVITY_TYPE] = Google.ACTIVITY_TYPES[2]
 
-        df[Google.CHANNEL_URL] = (
-            "https://www.youtube.com/channel/" + df[Google.CHANNEL_ID]
-        )
+        df[Google.CHANNEL_URL] = "https://www.youtube.com/channel/" + df[Google.CHANNEL_ID]
 
-        logger.info(f"Stardardising {Google.DATE} field...")
-        logger.info(f"Sample before cleaning: {df[Google.DATE].head(2).to_list()}")
+        logger.debug(f"Stardardising {Google.DATE} field...")
+        logger.debug(f"Sample before cleaning: {df[Google.DATE].head(2).to_list()}")
         df[Google.DATE] = df[Google.DATE].apply(parse_date)
-        logger.info(f"Sample after cleaning: {df[Google.DATE].head(2).to_list()}")
+        logger.debug(f"Sample after cleaning: {df[Google.DATE].head(2).to_list()}")
 
         df[Google.CHANNEL_THUMBNAIL] = df.apply(get_best_url, axis=1)
 
         df = df[list(Google.SUBS_MAPPING.values())]
 
-        logger.info(
-            f"Renamed / added fields: [{', '.join(Google.SUBS_MAPPING.values())}]"
-        )
+        logger.debug(f"Renamed / added fields: [{', '.join(Google.SUBS_MAPPING.values())}]")
 
         logger.info("Successfully transformed subs data")
 

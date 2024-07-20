@@ -3,7 +3,7 @@ from collections import Counter
 import pandas as pd
 
 from constants import FileDirectory, Google
-from utility import s3_manager
+from utility import redis_manager, s3_manager
 from utility.file_manager import FileManager
 from utility.log_manager import setup_logging
 
@@ -21,7 +21,7 @@ def extract_activities(soup):
     Returns:
         list: List of dictionaries representing extracted activities.
     """
-    logger.info("Extracting activities from HTML...")
+    logger.debug("Extracting activities from HTML...")
 
     activities = []
 
@@ -65,28 +65,33 @@ def extract_activities(soup):
 
 def youtube_html_extractor():
     """
-    Main function to extract Youtube HTML Data, convert to DataFrame,
-    and upload to s3 and local storage.
+    Main function to extract Youtube HTML Data, convert to DataFrame, update cache,
+    save to S3 and local storage.
     """
     logger.info("!!!!!!!!!!!! youtube_html_extractor.py !!!!!!!!!!!")
 
     try:
         file_manager = FileManager()
 
-        soup = file_manager.load_file(
-            FileDirectory.SOURCE_DATA_PATH, Google.DATA_KEY, "html"
-        )  # Load HTML file
+        cached_data = redis_manager.get_cached_data("youtube_activity")
+        if cached_data is not None:
+            act_df = pd.DataFrame(cached_data)
+            logger.info(f"Successfully fetched {len(act_df)} total entries")
+        else:
+            soup = file_manager.load_file(FileDirectory.SOURCE_DATA_PATH, Google.HTML_DATA, "html")
 
-        activities = extract_activities(soup)  # Extract activities from HTML
-        act_df = pd.DataFrame(activities)  # Convert to DataFrame
+            activities = extract_activities(soup)  # Extract activities from HTML
+            act_df = pd.DataFrame(activities)  # Convert to DataFrame
 
-        activity_counts = Counter(act_df["activity_type"])
-        logger.info(f"Activity types found: {dict(activity_counts)}")
-        logger.info(f"{len(act_df)} activities extracted from HTML file")
+            activity_counts = Counter(act_df["activity_type"])
+            logger.debug(f"Activity types found: {dict(activity_counts)}")
+            logger.debug(f"{len(act_df)} activities extracted from HTML file")
 
-        # Upload data to S3 and local storage
-        s3_manager.post_data_to_s3("youtube_activity", act_df, True)
-        file_manager.save_file(FileDirectory.RAW_DATA_PATH, Google.DATA_KEY, act_df)
+            # Cache new data, upload to S3
+            redis_manager.update_cached_data(Google.HTML_DATA, act_df)
+            s3_manager.post_data_to_s3(Google.HTML_DATA, act_df, True)
+
+        file_manager.save_file(FileDirectory.RAW_DATA_PATH, Google.HTML_DATA, act_df)
 
     except Exception as e:
         logger.error(f"Error occurred in youtube_html_extractor: {str(e)}")

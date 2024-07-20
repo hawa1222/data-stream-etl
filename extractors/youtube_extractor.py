@@ -54,7 +54,7 @@ class YouTubeExtractor:
             FileNotFoundError: If token file is not found.
             IOError: If there's an error reading or writing token file.
         """
-        logger.info("Checking if API token needs refreshing...")
+        logger.debug("Checking if API token needs refreshing...")
 
         try:
             # Create Credentials object
@@ -62,12 +62,12 @@ class YouTubeExtractor:
             if creds.expired and creds.refresh_token:
                 logger.warning("Token has expired. Refreshing token...")
                 creds.refresh(Request())  # Refresh token
-                logger.info("Successfully refreshed token")
+                logger.debug("Successfully refreshed token")
                 with open(self.token_file, "w") as token:
                     token.write(creds.to_json())  # Save new credentials to token file
-                    logger.info("Successfully saved new credentials to token.json")
+                    logger.debug("Successfully saved new credentials to token.json")
             else:
-                logger.info("Token is still valid. No need to refresh")
+                logger.debug("Token is still valid. No need to refresh")
 
             return creds
 
@@ -105,7 +105,7 @@ class YouTubeExtractor:
                 )  # Make API call
                 items.extend(response.get("items", []))  # Add items to list
                 next_page_token = response.get("nextPageToken")  # Get next page token
-                logger.info(f"Fetched page {page + 1} of {api_endpoint} data")
+                logger.debug(f"Fetched page {page + 1} of {api_endpoint} data")
 
                 if not next_page_token:
                     break  # Break loop if no more pages to fetch
@@ -137,7 +137,7 @@ class YouTubeExtractor:
         api_endpoint = config["api_endpoint"]  # Extract API endpoint
         params = config["parameters"]  # Extract API parameters
 
-        logger.info(f"Fetching YouTube API data from {api_endpoint} endpoint...")
+        logger.debug(f"Fetching YouTube API data from {api_endpoint} endpoint...")
         try:
             raw_data = self._api_call(api_endpoint, params)  # Make API call
 
@@ -172,9 +172,7 @@ def clean_desc(df, field_name):
         cleaned DataFrame.
     """
     df[field_name] = (
-        df[field_name]
-        .str.replace("http://", "http[://]")
-        .str.replace("https://", "https[://]")
+        df[field_name].str.replace("http://", "http[://]").str.replace("https://", "https[://]")
     )
     df[field_name] = df[field_name].apply(lambda s: "'" + s if s.startswith("=") else s)
 
@@ -197,8 +195,8 @@ def youtube_extractor():
             obj_key = f"youtube_{data_name}"  # Define object key
 
             cached_data = redis_manager.get_cached_data(obj_key)  # Fetch cached data
-            if cached_data is not None:  # Check cached data exists
-                sd_data = pd.DataFrame(cached_data)  # Convert to DataFrame
+            if cached_data is not None:
+                sd_data = pd.DataFrame(cached_data)
                 logger.info(f"Successfully fetched {len(sd_data)} total entries")
             else:
                 raw_data = extractor.extract_data(config)  # Fetch new data
