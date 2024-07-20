@@ -69,7 +69,7 @@ class FileManager:
 
         except Exception as e:
             logger.error(f"Error loading file {full_path}: {str(e)}")
-            return None
+            raise
 
     def save_file(self, directory, file_name, data, extension="xlsx"):
         """
@@ -107,6 +107,7 @@ class FileManager:
 
         except Exception as e:
             logger.error(f"Error saving file {full_path}: {str(e)}")
+            raise
 
 
 def update_excel(file_directory, file_name, new_data):
@@ -121,7 +122,7 @@ def update_excel(file_directory, file_name, new_data):
     Returns:
         bool: True if the update was successful, False otherwise.
     """
-    logger.info(f"Updating local copy of '{file_name}'...")
+    logger.debug(f"Updating local copy of '{file_name}'...")
 
     if new_data.empty:
         logger.warning("New dataframe is empty. Skipping upload to local disk")
@@ -134,21 +135,17 @@ def update_excel(file_directory, file_name, new_data):
     try:
         if os.path.exists(local_data_path):
             existing_data = file_manager.load_file(file_directory, file_name)
-            logger.info(
+            logger.debug(
                 f"Local copy loaded. Existing data shape: {existing_data.shape}, New data shape: {new_data.shape}"
             )
         else:
             existing_data = pd.DataFrame()
-            logger.info("Local copy doesn't exist, empty dataframe created")
+            logger.debug("Local copy doesn't exist, empty dataframe created")
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=FutureWarning)
-            combined_data = pd.concat(
-                [existing_data, new_data], join="outer", ignore_index=True
-            )
-            logger.info(
-                f"Local copy updated. Updated data shape: {combined_data.shape}"
-            )
+            combined_data = pd.concat([existing_data, new_data], join="outer", ignore_index=True)
+            logger.info(f"Local copy updated. Updated data shape: {combined_data.shape}")
 
         file_manager.save_file(file_directory, file_name, combined_data)
 

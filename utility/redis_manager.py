@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import redis
 
-from config import REDIS_DB, REDIS_HOST, REDIS_PORT
+from config import REDIS_DB, REDIS_HOST, REDIS_PASSWORD, REDIS_PORT
 from utility.log_manager import setup_logging
 
 logger = setup_logging()
@@ -16,8 +16,8 @@ logger = setup_logging()
 redis_client = redis.Redis(
     host=REDIS_HOST,
     port=REDIS_PORT,
+    password=REDIS_PASSWORD,
     db=REDIS_DB,
-    password=None,
     decode_responses=True,
     socket_connect_timeout=10,
     socket_timeout=10,
@@ -34,17 +34,15 @@ def get_cached_ids(cache_key):
     Returns:
         set: An empty set if the key doesn't exist, or a set containing the cached data.
     """
-    logger.info(f"Fetching '{cache_key}' cache from Redis...")
+    logger.debug(f"Fetching '{cache_key}' cache from Redis...")
 
     try:
         cached_data = redis_client.smembers(cache_key)
-        logger.info(f"Successfully fetched {len(cached_data)} IDs")
-        return {
-            item if isinstance(item, str) else item.decode() for item in cached_data
-        }
+        logger.info(f"Successfully fetched {len(cached_data)} IDs from '{cache_key}' cache")
+        return {item if isinstance(item, str) else item.decode() for item in cached_data}
     except Exception as e:
-        logger.error(f"Error fetching cached IDs: {str(e)}")
-        return set()
+        logger.error(f"Error fetching '{cache_key}' cache: {str(e)}")
+        raise
 
 
 def update_cached_ids(cache_key, ids):
@@ -55,24 +53,25 @@ def update_cached_ids(cache_key, ids):
         cache_key (str): The key to update the cached data in Redis.
         new_data (set): A set containing the new data to be added to the cache.
     """
-    logger.info(f"Updating '{cache_key}' cache in Redis...")
+    logger.debug(f"Updating '{cache_key}' cache in Redis...")
 
     try:
         redis_client.sadd(cache_key, *ids)
-        logger.info(f"Successfully updated cached IDs, added {len(ids)} new IDs")
+        logger.info(f"Successfully updated '{cache_key}' cache, added {len(ids)} new IDs")
     except Exception as e:
-        logger.error(f"Error updating cached IDs: {str(e)}")
+        logger.error(f"Error updating '{cache_key}' cache: {str(e)}")
+        raise
 
 
 def get_cached_data(cache_key, expiry_time=48):
-    logger.info(f"Fetching '{cache_key}' cache from Redis...")
+    logger.debug(f"Fetching '{cache_key}' cache from Redis...")
 
     try:
         cached_data = redis_client.get(cache_key)
 
         if cached_data is None:
             redis_client.setex(cache_key, timedelta(hours=expiry_time), json.dumps({}))
-            logger.info("Cache not found. Empty cache created")
+            logger.info(f"'{cache_key}' cache not found. Empty cache created")
             return None
         cached_data = json.loads(cached_data)
         timestamp = cached_data.get("timestamp")
@@ -80,15 +79,15 @@ def get_cached_data(cache_key, expiry_time=48):
         if timestamp:
             cache_time = datetime.fromisoformat(timestamp)
             if datetime.now() - cache_time < timedelta(hours=expiry_time):
-                logger.info(f"Cache found, timestamp within {expiry_time} hours")
+                logger.info(f"'{cache_key}' cache found, timestamp within {expiry_time} hours")
                 return cached_data.get("data")
 
-        logger.info(f"Cache found, timestamp older than {expiry_time} hours")
+        logger.info(f"'{cache_key}' cache found, timestamp older than {expiry_time} hours")
         return None
 
     except Exception as e:
         logger.error(f"Error fetching cached data: {str(e)}")
-        return None
+        raise
 
 
 class JSONEncoder(json.JSONEncoder):
@@ -103,7 +102,7 @@ class JSONEncoder(json.JSONEncoder):
 
 
 def update_cached_data(cache_key, data):
-    logger.info(f"Updating '{cache_key}' cache in Redis...")
+    logger.debug(f"Updating '{cache_key}' cache in Redis...")
     """
     Update the cache with new data for the given key.
 
@@ -120,10 +119,11 @@ def update_cached_data(cache_key, data):
             timedelta(hours=48),
             json.dumps(cache_data, cls=JSONEncoder, indent=2),
         )
-        logger.info(f"Succesfully updated cache, {len(data)} total entries")
+        logger.info(f"Succesfully updated '{cache_key}' cache, {len(data)} total entries")
 
     except Exception as e:
-        logger.error(f"Error updating cached data: {str(e)}")
+        logger.error(f"Error updating '{cache_key}' cache: {str(e)}")
+        raise
 
 
 def delete_cache_values(key, values):
@@ -132,11 +132,11 @@ def delete_cache_values(key, values):
 
     Parameters:
         redis_client: The Redis client connection.
-        key: The key under which the values are stored.
+        key: The key under which values are stored.
         values: The values to be deleted.
-        data_type: Optional. The data type of the key. If not provided, it will be determined.
+        data_type: Optional. The data type of key. If not provided, it will be determined.
     """
-    logger.info(f"Deleting values from key: {key}")
+    logger.debug(f"Deleting values from key: {key}")
 
     if not redis_client.exists(key):
         logger.error(f"Key {key} does not exist.")
@@ -147,17 +147,15 @@ def delete_cache_values(key, values):
     if data_type == "list":
         for value in values:
             redis_client.lrem(key, 0, value)
-        logger.info(f"Successfully deleted {len(values)} values from the list")
+        logger.info(f"Successfully deleted {len(values)} values from list")
     elif data_type == "set":
         deleted_count = redis_client.srem(key, *values)
-        logger.info(f"Successfully deleted {deleted_count} values from the set")
+        logger.info(f"Successfully deleted {deleted_count} values from set")
     elif data_type == "zset":
         deleted_count = redis_client.zrem(key, *values)
-        logger.info(f"Successfully deleted {deleted_count} values from the sorted set")
+        logger.info(f"Successfully deleted {deleted_count} values from sorted set")
     elif data_type == "hash":
         deleted_count = redis_client.hdel(key, *values)
-        logger.info(f"Successfully deleted {deleted_count} values from the hash")
+        logger.info(f"Successfully deleted {deleted_count} values from hash")
     else:
-        logger.error(
-            f"Unsupported data type for deletion: {data_type} or key does not exist."
-        )
+        logger.error(f"Unsupported data type for deletion: {data_type} or key does not exist.")

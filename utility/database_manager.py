@@ -74,9 +74,7 @@ class DatabaseHandler:
             cursor.execute("SET SESSION sql_mode = '';")
             cursor.close()
 
-            logger.info(
-                "Successfully connected to the database and set time zone to UTC"
-            )
+            logger.info("Successfully connected to the database and set time zone to UTC")
             return conn
         except Error as e:
             # Log the error and exit the script if connection fails
@@ -100,14 +98,10 @@ class DatabaseHandler:
                         f"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '{self.connection.database}' AND table_name = '{table_name}'"
                     )
                     if cursor.fetchone()[0] == 1:  # Check if the table exists
-                        logger.info(
-                            f"Table '{table_name}' already exists"
-                        )  # Log if table exists
+                        logger.info(f"Table '{table_name}' already exists")  # Log if table exists
                     else:
                         # Generate the SQL query for creating the table
-                        create_table_query = self.generate_create_table_query(
-                            table_name, fields
-                        )
+                        create_table_query = self.generate_create_table_query(table_name, fields)
                         # logger.info(f"Generated SQL for table creation: {create_table_query}")  # Log the SQL command for debugging
                         cursor.execute(
                             create_table_query
@@ -121,7 +115,7 @@ class DatabaseHandler:
                             if "FOREIGN KEY" in definition:
                                 # Extract and log the foreign key details from the column definition
                                 fk_detail = definition.split("FOREIGN KEY")[1].strip()
-                                logger.info(
+                                logger.debug(
                                     f"Foreign key defined '{field}' for table '{table_name}': {fk_detail}"
                                 )
 
@@ -155,7 +149,9 @@ class DatabaseHandler:
         )
 
         # Construct the complete CREATE TABLE SQL query
-        create_table_query = f"CREATE TABLE IF NOT EXISTS {table_name} ({field_definitions}) ENGINE=InnoDB;"
+        create_table_query = (
+            f"CREATE TABLE IF NOT EXISTS {table_name} ({field_definitions}) ENGINE=InnoDB;"
+        )
 
         # Return the complete SQL query
         return create_table_query
@@ -175,9 +171,7 @@ class DatabaseHandler:
                         f"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '{self.connection.database}' AND table_name = '{table_name}'"
                     )
                     if cursor.fetchone()[0] == 0:
-                        logger.info(
-                            f"Table '{table_name}' does not exist, no action taken."
-                        )
+                        logger.info(f"Table '{table_name}' does not exist, no action taken.")
                     else:
                         # Table exists, proceed to drop it
                         drop_table_query = f"DROP TABLE {table_name};"
@@ -214,9 +208,7 @@ class DatabaseHandler:
                     updated_count = 0
 
                     # Generate the SQL query for data insertion
-                    insert_query = self.generate_insert_query(
-                        table_name, column_mapping
-                    )
+                    insert_query = self.generate_insert_query(table_name, column_mapping)
 
                     # Iterate over each row in the DataFrame
                     for i, row in data_frame.iterrows():
@@ -233,9 +225,7 @@ class DatabaseHandler:
                             if cursor.rowcount == 1:
                                 added_count += 1  # Increment added count for a new row
                             elif cursor.rowcount == 2:
-                                updated_count += (
-                                    1  # Increment updated count for an existing row
-                                )
+                                updated_count += 1  # Increment updated count for an existing row
 
                             # Commit the transaction to save changes
                             self.connection.commit()
@@ -254,9 +244,7 @@ class DatabaseHandler:
 
             except Error as e:
                 # Log any error that occurs during the database operation outside the row insertion
-                logger.error(
-                    "Error during data insertion into table '%s': %s", table_name, e
-                )
+                logger.error("Error during data insertion into table '%s': %s", table_name, e)
                 # Rollback any changes made in the current transaction
                 self.connection.rollback()
 

@@ -23,9 +23,7 @@ def post_data_to_s3(object_name, data, overwrite=False):
     :param object_name: Name of data source
     :return: True if data was uploaded, else False
     """
-    logger.info(
-        f"Starting upload to S3 bucket '{S3_BUCKET}' for data source '{object_name}'..."
-    )
+    logger.debug(f"Starting upload to S3 bucket '{S3_BUCKET}' for data source '{object_name}'...")
 
     try:
         # Check if DataFrame is empty
@@ -44,7 +42,9 @@ def post_data_to_s3(object_name, data, overwrite=False):
             s3_object_name = f"{s3_prefix}{object_name}.csv"
         else:
             # Create S3 object name with data source name, date, and time
-            s3_object_name = f"{s3_prefix}{object_name}_{current_datetime.strftime('%Y-%m-%d_%H-%M-%S')}.csv"
+            s3_object_name = (
+                f"{s3_prefix}{object_name}_{current_datetime.strftime('%Y-%m-%d_%H-%M-%S')}.csv"
+            )
 
         # Create a BytesIO object to store DataFrame data
         csv_buffer = BytesIO()
@@ -53,14 +53,14 @@ def post_data_to_s3(object_name, data, overwrite=False):
         data.to_csv(csv_buffer, index=False)
 
         # Upload DataFrame to S3
-        s3_client.put_object(
-            Bucket=S3_BUCKET, Key=s3_object_name, Body=csv_buffer.getvalue()
+        s3_client.put_object(Bucket=S3_BUCKET, Key=s3_object_name, Body=csv_buffer.getvalue())
+        logger.info(
+            f"Succesfully uploaded data to S3 bucket '{S3_BUCKET}', object '{s3_object_name}'"
         )
-        logger.info(f"Succesfully uploaded data as '{s3_object_name}'")
         return True
 
     except Exception as e:
-        logger.error(f"Error uploading DataFrame to S3: {str(e)}")
+        logger.error(f"Error uploading DataFrame to S3 bucket '{S3_BUCKET}': {str(e)}")
         return False
 
 
@@ -72,13 +72,15 @@ def get_data_from_s3(object_name):
     :param object_name: S3 object name
     :return: Data as string, or None if an error occurred
     """
-    logger.info(f"Starting download from S3 bucket: {S3_BUCKET}, object: {object_name}")
+    logger.debug(f"Starting download from S3 bucket '{S3_BUCKET}', object '{object_name}'...")
 
     try:
         response = s3_client.get_object(Bucket=S3_BUCKET, Key=object_name)
         data = response["Body"].read().decode("utf-8")
-        logger.info(f"Successfully downloaded data from {S3_BUCKET}/{object_name}")
+        logger.info(
+            f"Successfully downloaded data from S3 bucket '{S3_BUCKET}', object '{object_name}'"
+        )
         return data
     except Exception as e:
-        logger.error(f"Error downloading data from {S3_BUCKET}/{object_name}: {e}")
+        logger.error(f"Error downloading data from S3 bucket '{S3_BUCKET}': {str(e)}")
         return None

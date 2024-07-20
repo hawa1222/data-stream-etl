@@ -19,7 +19,7 @@ class CleanData:
         df = df.dropna(thresh=threshold)  # Drop NaN rows
         rows_after = df.shape[0]
 
-        logger.info(
+        logger.debug(
             f"Dropped {rows_before - rows_after} rows with more than {threshold} NaN values"
         )
 
@@ -48,7 +48,7 @@ class CleanData:
         Returns:
             DataFrame: DataFrame with standardised column names and NaN rows removed
         """
-        logger.info("Standardising field names and dropping NaN rows...")
+        logger.debug("Standardising field names and dropping NaN rows...")
 
         if na_threshold is not None:
             df = CleanData.drop_na_rows(df, threshold=na_threshold)
@@ -62,7 +62,8 @@ class CleanData:
                 changed_fields.append(new_col_name)
 
         df.columns = df_fields
-        logger.info(f"{len(changed_fields)} field names changed: {changed_fields}")
+        logger.debug(f"{len(changed_fields)} field names changed:\n\n{changed_fields}\n")
+        logger.info("Succesfully standardised data")
 
         return df
 
@@ -81,7 +82,7 @@ def round_floats(df):
         for column in df.select_dtypes(include=["float64"]).columns:
             df[column] = df[column].round(2)
 
-        logger.info(
+        logger.debug(
             f"Successfully rounded {len(df.select_dtypes(include=['float64']).columns)} float columns to 2 Decimal Places"
         )
 

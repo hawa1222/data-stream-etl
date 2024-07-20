@@ -25,7 +25,7 @@ class Daylio:
 
     DATA_KEY = "daylio_journal"
     MOOD_DATA = "daylio_mood"
-    ACTIVITY_DATA = "daylio_activities"
+    ACTIVITY_DATA = "daylio_activity"
 
     ID = "id"
     DATE = "full_date"
@@ -44,7 +44,7 @@ class Spend:
     Constants specific to the Spend data.
     """
 
-    DATA_KEY = "transactions"
+    DATA_KEY = "spend"
     RAW_SHEET_NAME = "Spending Data"
     DATE = "date"
 
@@ -120,7 +120,6 @@ class Apple:
         "Blood Oxygen": 9,
     }
 
-    # Transformation Logic
     RECORD_TRANSFORMATION_LOGIC = {
         "AppleWalkingSteadiness": {
             "timeframe": ["date"],
@@ -168,7 +167,7 @@ class Apple:
             "timeframe": ["date", "hour"],
             "agg_type": ["Sum"],
             "fields": ["low_hr_event"],
-            "group": ["low_hr_events"],
+            "group": ["low_hr_event"],
         },
         "MindfulSession": {
             "timeframe": ["date"],
@@ -305,6 +304,7 @@ class Google:
     )
 
     DATA_KEY = "youtube_activity"
+    HTML_DATA = "youtube_html_activity"
     LIKES_DATA = "youtube_likes"
     SUBS_DATA = "youtube_subs"
     CHANNEL_DATA = "youtube_channels"
@@ -420,7 +420,7 @@ class Strava:
     ID_KEY = "strava_activity_ids"
     DATA_KEY = "strava_activity"
 
-    ACTIVITY_DATA = "strava_events"
+    ACTIVITY_DATA = "strava_event"
     PERFORMANCE_DATA = "strava_metrics"
 
     # API Parameters

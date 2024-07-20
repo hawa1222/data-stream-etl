@@ -125,14 +125,13 @@ def post_load():
     logger.info("Starting post-load data validation checks...")
 
     try:
-        YT = f"{Google.DATA_KEY}_enriched"
         datasets = {
             "apple_walking_metrics",
             "apple_daily_activity",
             "apple_blood_glucose",
             "apple_heart_rate",
             "apple_fitness_metrics",
-            "apple_low_hr_events",
+            "apple_low_hr_event",
             "apple_running_metrics",
             "apple_sleep",
             "apple_steps",
@@ -141,7 +140,7 @@ def post_load():
             Spend.DATA_KEY,
             Strava.PERFORMANCE_DATA,
             Strava.ACTIVITY_DATA,
-            YT,
+            Google.DATA_KEY,
         }
 
         file_manager = FileManager()
