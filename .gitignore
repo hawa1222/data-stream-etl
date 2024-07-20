@@ -48,3 +48,4 @@ setup_cron.sh
 /utility/data_setup/
 
 /airflow/config/
+/tests/api_call.ipynb
