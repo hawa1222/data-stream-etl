@@ -1,139 +1,101 @@
-"""
-YouTube Activity Data Extraction
+from collections import Counter
 
-This script is responsible for parsing and extracting activity data about liked and disliked videos on YouTube from an HTML file. 
-It utilises BeautifulSoup to parse the HTML and extracts relevant information.
-
-Key Functions:
-1. `parse_activity_data(html_file)`: 
-   - Parses an HTML file to extract data about liked and disliked videos on YouTube.
-   - Returns a DataFrame containing the parsed activity data.
-
-2. `youtube_html_extractor()`:
-   - Main function that loads the YouTube HTML file, parses it, and saves the parsed data.
-
-Usage:
-- Execute this script as the main module to extract activity data from a YouTube HTML file.
-- Ensure that the HTML file containing YouTube activity data is available in the specified directory.
-
-Note:
-- This script is designed to work with YouTube activity data exported manually from YouTube.
-- It extracts information such as the date of activity, whether a video was liked or disliked, video titles, video URLs, channel titles, and channel URLs.
-- The parsed data is saved in a structured format for further analysis or reporting.
-- It is part of a larger data processing system for managing YouTube data.
-"""
-
-# Import required libraries
 import pandas as pd
 
-# Custom imports
-from constants import FileDirectory, Youtube
+from constants import FileDirectory, Google
+from utility import redis_manager, s3_manager
 from utility.file_manager import FileManager
-from utility.logging import setup_logging  # Custom logging setup
+from utility.log_manager import setup_logging
 
-# Initialise logging
 logger = setup_logging()
 
-#############################################################################################
 
-# Define a function for parsing activity data from an HTML file
-def parse_activity_data(html_file):
+def extract_activities(soup):
     """
-    Parses an HTML file to extract data about liked and disliked videos on YouTube.
+    Extracts activity type, published date, channel title, channel URL,
+    content title, and content URL from HTML soup.
 
     Parameters:
-        html_file (BeautifulSoup): A BeautifulSoup object containing the parsed HTML file.
+        soup: BeautifulSoup object representing HTML soup.
 
     Returns:
-        DataFrame: A dataframe containing the parsed activity data.
+        list: List of dictionaries representing extracted activities.
     """
+    logger.debug("Extracting activities from HTML...")
 
-    # Log the start of the parsing process
-    logger.info('Parsing HTML data...')
+    activities = []
 
-    # Find all div elements that match the specified class - these contain the activity data
-    liked_video_elements = html_file.find_all(
-        'div', {'class': 'content-cell mdl-cell mdl-cell--6-col mdl-typography--body-1'})
+    for div in soup.find_all(
+        "div", class_="content-cell mdl-cell mdl-cell--6-col mdl-typography--body-1"
+    ):  # Find all activity divs
+        text = div.get_text(strip=True)  # Get text from div
+        date = div.contents[-1].strip()  # Get date from last element in div
 
-    # Initialise an empty list to store each video's activity data
-    activity_data = []
+        for activity_type in Google.ACTIVITY_TYPES:
+            # Check text starts with predefined activity types (e.g. "Liked", "Disliked", etc.)
+            if text.startswith(activity_type):
+                activity = {
+                    "activity_type": activity_type,
+                    "published_at": date,
+                }  # Create activity dictionary with type and date
 
-    # Iterate through each div element found
-    for element in liked_video_elements:
-        # Create a dictionary to store data for this specific video activity
-        activity = {}
+                for link in div.find_all("a"):  # Find all links in div
+                    url = link.get("href", "")  # Get link URL
+                    text = link.text.strip()  # Get link text
 
-        # Extract the text content of the current div element
-        element_text = element.get_text()
+                    if "youtube.com/channel" in url:  # Check if channel URL
+                        activity["channel_title"] = (
+                            text if not text.startswith("http") else ""
+                        )  # Add channel name if text is not URL
+                        activity["channel_url"] = url  # Add channel URL
+                    else:
+                        activity["content_title"] = (
+                            text if not text.startswith("http") else ""
+                        )  # Add content title if text is not URL
+                        activity["content_url"] = url  # Add content URL
 
-        # Check if the text indicates a 'Liked' or 'Disliked' video
-        if element_text.startswith(Youtube.PLAYLIST_VALUE[0]) or element_text.startswith(Youtube.PLAYLIST_VALUE[1]):
-            # Extract the date of the activity and store it in the dictionary
-            activity[Youtube.DATE] = element.contents[-1].strip()
+                activities.append(activity)  # Add activity to list
+                break
 
-            # Determine if the video was liked or disliked and store this information
-            activity[Youtube.PLAYLIST] = Youtube.PLAYLIST_VALUE[0] if Youtube.PLAYLIST_VALUE[0] in element_text else Youtube.PLAYLIST_VALUE[1]
+        else:
+            logger.warning(f"No matching activity type found for text: {text}")
 
-            # Find all anchor (a) tags within the div element - these usually contain hyperlinks
-            a_tags = element.find_all('a')
+    return activities
 
-            # If there's at least one anchor tag, extract the video title and URL
-            if len(a_tags) > 0:
-                activity[Youtube.VID_TITLE] = a_tags[0].text  # Video title is in the first anchor tag
-                activity[Youtube.VID_URL] = a_tags[0]['href']  # Video URL is the 'href' attribute of the first anchor tag
 
-            # If there are at least two anchor tags, extract the channel title and URL
-            if len(a_tags) > 1:
-                activity[Youtube.VID_OWNER] = a_tags[1].text  # Channel title is in the second anchor tag
-                activity[Youtube.CHANNEL_URL] = a_tags[1]['href']  # Channel URL is the 'href' attribute of the second anchor tag
-
-            # Add the dictionary with the video's activity data to the list
-            activity_data.append(activity)
-
-    # Convert the list of video activity dictionaries to a DataFrame
-    activity_data_df = pd.DataFrame(activity_data)
-
-    # Log the successful completion of the parsing process
-    logger.info('Successfully parsed HTML data')
-
-    # Return the DataFrame containing the activity data
-    return activity_data_df
-
-#############################################################################################
-
-# Function responsible for extracting data
 def youtube_html_extractor():
-
     """
-    Load & Parse Youtube HTML Data
+    Main function to extract Youtube HTML Data, convert to DataFrame, update cache,
+    save to S3 and local storage.
     """
-    # Initilaise FileManager Class
-    file_manager = FileManager()
+    logger.info("!!!!!!!!!!!! youtube_html_extractor.py !!!!!!!!!!!")
 
-    # Load youtube HTML file from iCloud
-    html_data = file_manager.load_file(FileDirectory.MANUAL_EXPORT_PATH, Youtube.RAW_HTML_DATA)
+    try:
+        file_manager = FileManager()
 
-    # Extract data from HTML file
-    parsed_data = parse_activity_data(html_data)
+        cached_data = redis_manager.get_cached_data("youtube_activity")
+        if cached_data is not None:
+            act_df = pd.DataFrame(cached_data)
+            logger.info(f"Successfully fetched {len(act_df)} total entries")
+        else:
+            soup = file_manager.load_file(FileDirectory.SOURCE_DATA_PATH, Google.HTML_DATA, "html")
 
-    # Save Data
-    file_manager.save_file(FileDirectory.RAW_DATA_PATH, parsed_data, Youtube.PARSED_HTML_DATA)
+            activities = extract_activities(soup)  # Extract activities from HTML
+            act_df = pd.DataFrame(activities)  # Convert to DataFrame
+
+            activity_counts = Counter(act_df["activity_type"])
+            logger.debug(f"Activity types found: {dict(activity_counts)}")
+            logger.debug(f"{len(act_df)} activities extracted from HTML file")
+
+            # Cache new data, upload to S3
+            redis_manager.update_cached_data(Google.HTML_DATA, act_df)
+            s3_manager.post_data_to_s3(Google.HTML_DATA, act_df, True)
+
+        file_manager.save_file(FileDirectory.RAW_DATA_PATH, Google.HTML_DATA, act_df)
+
+    except Exception as e:
+        logger.error(f"Error occurred in youtube_html_extractor: {str(e)}")
 
 
 if __name__ == "__main__":
-    # Execute the data extraction function
     youtube_html_extractor()
-
-
-
-
-
-
-
-
-
-
-
-
-
-

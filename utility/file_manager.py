@@ -1,330 +1,156 @@
-# Import required libraries
-import os  # For operating system-dependent functionality
-import pandas as pd  # For data manipulation and analysis
-import json  # For reading and writing JSON files
-import chardet  # For character encoding detection
-import xml.etree.ElementTree as ET  # For XML tree traversal
-from bs4 import BeautifulSoup  # For parsing HTML and XML documents
+"""
+Script to load and save files in different formats, and update Excel files with new data.
+"""
 
-# Custom imports
-from utility.logging import setup_logging  # Custom logging setup
+import json
+import os
+import warnings
+import xml.etree.ElementTree as ET
 
-# Call the logging setup function to initialise logging
+import pandas as pd
+from bs4 import BeautifulSoup
+
+from utility.log_manager import setup_logging
+
 logger = setup_logging()
 
-#############################################################################################
 
-# Class for handling CSV files
-class CSVHandler:
-    """
-    Class to handle operations related to CSV files.
-    """
-
-    # Load CSV file
-    def load(self, file_path, **kwargs):
-        """
-        Load a CSV file and return it as a Pandas DataFrame.
-        Uses chardet to detect file encoding.
-
-        Parameters:
-        - file_path (str): The path to the CSV file
-        - **kwargs: Additional keyword arguments (not used here)
-
-        Returns:
-        - DataFrame: The loaded data
-        """
-        # Detect file encoding
-        with open(file_path, 'rb') as f:
-            result = chardet.detect(f.read())
-        detected_encoding = result['encoding']
-
-        # Try reading the file with detected encoding, fallback to utf-8
-        try:
-            return pd.read_csv(file_path, encoding=detected_encoding)
-        except:
-            return pd.read_csv(file_path, encoding='utf-8')
-
-    # Save DataFrame to CSV
-    def save(self, data, file_path):
-        """
-        Save a Pandas DataFrame to a CSV file.
-
-        Parameters:
-        - data (DataFrame): The data to save
-        - file_path (str): The path to the CSV file where data will be saved
-
-        Returns:
-        - None
-        """
-        data.to_csv(file_path, index=False)
-
-# Class for handling Excel files
-class ExcelHandler:
-    """
-    Class to handle operations related to Excel files.
-    """
-
-    # Load Excel file
-    def load(self, file_path, **kwargs):
-        """
-        Load an Excel file and return it as a Pandas DataFrame.
-
-        Parameters:
-        - file_path (str): The path to the Excel file
-        - **kwargs: Additional keyword arguments (like sheet_name)
-
-        Returns:
-        - DataFrame: The loaded data
-        """
-        sheet_name = kwargs.get('sheet_name', 0)  # Get sheet_name, default is 0
-        return pd.read_excel(file_path,  engine='openpyxl', sheet_name=sheet_name)
-
-    # Save DataFrame to Excel
-    def save(self, data, file_path):
-        """
-        Save a Pandas DataFrame to an Excel file.
-
-        Parameters:
-        - data (DataFrame): The data to save
-        - file_path (str): The path to the Excel file where data will be saved
-
-        Returns:
-        - None
-        """
-        data.to_excel(file_path, index=False)
-
-# Class for handling XML files
-class XMLHandler:
-    """
-    Class to handle operations related to XML files.
-    """
-
-    # Load XML file
-    def load(self, file_path):
-        """
-        Load an XML file and return it as an ElementTree object.
-
-        Parameters:
-        - file_path (str): The path to the XML file
-
-        Returns:
-        - ElementTree: The loaded XML tree
-        """
-        try:
-            tree = ET.parse(file_path)  # Parse XML
-        except ET.ParseError:  # Handle parsing errors
-            logger.info("Failed to parse the XML file.")
-        return tree
-
-    # Save ElementTree to XML
-    def save(self, data, file_path):
-        """
-        Save an ElementTree object to an XML file.
-
-        Parameters:
-        - data (ElementTree): The XML tree to save
-        - file_path (str): The path to the XML file where data will be saved
-
-        Returns:
-        - None
-        """
-        data.write(file_path)  # Write XML to file
-
-# Class for handling JSON files
-class JSONHandler:
-    """
-    Class to handle operations related to JSON files.
-    """
-
-    # Load JSON file
-    def load(self, file_path, **kwargs):
-        """
-        Load a JSON file and return it as a Python object.
-
-        Parameters:
-        - file_path (str): The path to the JSON file
-        - **kwargs: Additional keyword arguments (not used here)
-
-        Returns:
-        - dict/list: The loaded JSON data as a Python object
-        """
-        with open(file_path, 'r') as f:
-            return json.load(f)  # Read and load JSON into a Python object
-
-    # Save Python object to JSON
-    def save(self, data, file_path):
-        """
-        Save a Python object to a JSON file.
-
-        Parameters:
-        - data (dict/list): The Python object to save
-        - file_path (str): The path to the JSON file where data will be saved
-
-        Returns:
-        - None
-        """
-        with open(file_path, 'w') as f:
-            json.dump(data, f, indent=4)  # Write Python object to JSON with indentation
-
-# Class for handling HTML files
-class HTMLHandler:
-    """
-    Class to handle operations related to HTML files.
-    """
-
-    # Load HTML file
-    def load(self, file_path):
-        """
-        Load an HTML file and return it as a BeautifulSoup object.
-
-        Parameters:
-        - file_path (str): The path to the HTML file
-
-        Returns:
-        - BeautifulSoup: The parsed HTML
-        """
-        with open(file_path, 'r', encoding='utf-8') as file:  # Open file
-            soup = BeautifulSoup(file, 'lxml')  # Parse HTML
-        return soup
-
-    # Save BeautifulSoup to HTML
-    def save(self, data, file_path):
-        """
-        Save a BeautifulSoup object to an HTML file.
-
-        Parameters:
-        - data (BeautifulSoup): The HTML to save
-        - file_path (str): The path to the HTML file where data will be saved
-
-        Returns:
-        - None
-        """
-        html_str = str(data)  # Convert BeautifulSoup object to string
-        with open(file_path, 'w', encoding='utf-8') as file:  # Open file
-            file.write(html_str)  # Write HTML string to file
-
-
-# Main FileManager class to handle different file types
 class FileManager:
     """
-    FileManager class responsible for loading and saving files.
+    Class to load and save files in different formats
 
-    Attributes:
-    directory (str): The directory where files are stored.
-
-    Methods:
-    load_file(file_name, **kwargs): Loads a file from the directory.
-    save_file(data, file_name): Saves data to a file in the directory.
-    _get_full_path(file_name): Gets the full path of a file in the directory.
-    _get_handler(file_extension): Returns the appropriate file handler based on file extension.
+    Supported formats:
+    - CSV
+    - Excel
+    - JSON
+    - XML
+    - HTML
     """
 
     def __init__(self):
-        """
-        Constructor for FileManager.
-
-        """
         pass
 
     def _get_full_path(self, directory, file_name):
-        """
-        Get the full path for a file.
-
-        Parameters:
-        directory (str): The directory from which to load the file.
-        file_name (str): Name of the file.
-
-        Returns:
-        str: Full path of the file.
-        """
         return os.path.join(directory, file_name)
 
-    def load_file(self, directory, file_name, **kwargs):
+    def load_file(self, directory, file_name, extension="xlsx", **kwargs):
         """
-        Load a file from the directory.
+        Load a file from the specified directory with the given file name.
 
         Parameters:
-        directory (str): The directory from which to load the file.
-        file_name (str): The name of the file to load.
-        **kwargs: Additional keyword arguments for file loading.
+            directory: The directory where the file is located.
+            file_name: The name of the file to load.
+            **kwargs: Additional keyword arguments to be passed to the file reading function.
 
         Returns:
-        Various: The loaded data from the file.
+            data: The loaded data from the file, or None if an error occurred.
         """
-        # Extract the extension from the file name
-        file_extension = os.path.splitext(file_name)[1]
+        full_path = self._get_full_path(directory, file_name) + "." + extension
 
-        # Get the appropriate handler for the file extension
-        handler = self._get_handler(file_extension)
+        try:
+            if extension in ["csv", "txt"]:
+                data = pd.read_csv(full_path, **kwargs)
+            elif extension in ["xls", "xlsx", "xlsm"]:
+                data = pd.read_excel(full_path, engine="openpyxl", **kwargs)
+            elif extension == "json":
+                with open(full_path, "r") as f:
+                    data = json.load(f)
+            elif extension == "xml":
+                data = ET.parse(full_path)
+            elif extension == "html":
+                with open(full_path, "r", encoding="utf-8") as f:
+                    data = BeautifulSoup(f, "lxml")
+            else:
+                logger.error(f"Unsupported file format: {extension}")
+                return None
 
-        # Check if the handler exists for the given file extension
-        if handler is None:
-            logger.error(f"Unsupported file format: {file_extension}")
-            return None
+            logger.info(f"Successfully loaded file from {full_path}")
+            return data
 
-        # Get the full path of the file
-        full_path = self._get_full_path(directory, file_name)
+        except Exception as e:
+            logger.error(f"Error loading file {full_path}: {str(e)}")
+            raise
 
-        # Use the handler to load the data
-        loaded_data = handler.load(full_path, **kwargs)
-
-        # Log the successful file load
-        logger.info(f"Successfully loaded file from {full_path}")
-
-        return loaded_data
-
-    def save_file(self, directory, data, file_name):
+    def save_file(self, directory, file_name, data, extension="xlsx"):
         """
-        Save data to a file in the directory.
+        Save the data to a file in the specified directory with the given file name.
 
         Parameters:
-        directory (str): The directory from which to load the file.
-        data (Various): The data to save.
-        file_name (str): The name of the file to save the data in.
+            directory: The directory where the file will be saved.
+            file_name: The name of the file to save.
+            data: The data to be saved.
+            extension: The file extension to use for saving the file (default: "xlsx").
 
         Returns:
-        None
+            None
         """
-        # Extract the extension from the file name
-        file_extension = os.path.splitext(file_name)[1]
+        full_path = self._get_full_path(directory, file_name) + "." + extension
 
-        # Get the appropriate handler for the file extension
-        handler = self._get_handler(file_extension)
+        try:
+            if extension in ["xls", "xlsx", "xlsm"]:
+                data.to_excel(full_path, index=False, engine="openpyxl")
+            elif extension in ["csv", "txt"]:
+                data.to_csv(full_path, index=False)
+            elif extension == "json":
+                with open(full_path, "w") as f:
+                    json.dump(data, f, indent=4)
+            elif extension == "xml":
+                data.write(full_path)
+            elif extension == "html":
+                with open(full_path, "w", encoding="utf-8") as f:
+                    f.write(str(data))
+            else:
+                logger.error(f"Unsupported file format for saving: {extension}")
+                return
 
-        # Check if the handler exists for the given file extension
-        if handler is None:
-            logger.error(f"Unsupported file format: {file_extension}")
-            return
+            logger.info(f"Successfully saved file to {full_path}")
 
-        # Get the full path of the file
-        full_path = self._get_full_path(directory, file_name)
+        except Exception as e:
+            logger.error(f"Error saving file {full_path}: {str(e)}")
+            raise
 
-        # Use the handler to save the data
-        handler.save(data, full_path)
 
-        # Log the successful file save
-        logger.info(f"Successfully saved file to {full_path}")
+def update_excel(file_directory, file_name, new_data):
+    """
+    Update an existing Excel file with new data.
 
-    def _get_handler(self, file_extension):
-        """
-        Get the appropriate file handler based on file extension.
+    Parameters:
+        file_directory: The directory where the file is located.
+        file_name: The name of the file to update.
+        new_data: The new data to be added to the existing file.
 
-        Parameters:
-        file_extension (str): The file extension.
+    Returns:
+        bool: True if the update was successful, False otherwise.
+    """
+    logger.debug(f"Updating local copy of '{file_name}'...")
 
-        Returns:
-        Various: The appropriate file handler object.
-        """
-        # Define a dictionary to map file extensions to their respective handlers
-        handlers = {
-            '.csv': CSVHandler(),
-            '.xls': ExcelHandler(),
-            '.xlsx': ExcelHandler(),
-            '.xlsm': ExcelHandler(),
-            '.xml': XMLHandler(),
-            '.json': JSONHandler(),
-            '.html': HTMLHandler()
-        }
+    if new_data.empty:
+        logger.warning("New dataframe is empty. Skipping upload to local disk")
+        return False
 
-        # Return the handler associated with the file extension
-        return handlers.get(file_extension)
+    local_data_path = os.path.join(file_directory, f"{file_name}.xlsx")
+
+    file_manager = FileManager()
+
+    try:
+        if os.path.exists(local_data_path):
+            existing_data = file_manager.load_file(file_directory, file_name)
+            logger.debug(
+                f"Local copy loaded. Existing data shape: {existing_data.shape}, New data shape: {new_data.shape}"
+            )
+        else:
+            existing_data = pd.DataFrame()
+            logger.debug("Local copy doesn't exist, empty dataframe created")
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=FutureWarning)
+            combined_data = pd.concat([existing_data, new_data], join="outer", ignore_index=True)
+            logger.info(f"Local copy updated. Updated data shape: {combined_data.shape}")
+
+        file_manager.save_file(file_directory, file_name, combined_data)
+
+        return True
+
+    except Exception as e:
+        logger.error(f"Error updating Excel file '{local_data_path}': {str(e)}")
+        raise

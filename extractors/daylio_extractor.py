@@ -1,47 +1,43 @@
-"""
-This script facilitates the extraction and initial processing of Daylio data.
+import pandas as pd
 
-Key Processes:
-1. FileManager Initialisation:
-   - Creates an instance of the FileManager class to handle file operations.
-
-2. Data Loading:
-   - Loads the Daylio data file (possibly in a raw format) from a specified manual export directory using FileManager.
-
-3. Data Saving:
-   - Saves the loaded Daylio data into a designated directory for raw data, setting it up for future processing stages.
-
-Usage:
-- Designed to be run as the main module, the script invokes the `daylio_extractor` function to extract Daylio data.
-- It's tailored specifically for the initial stage of handling Daylio data, focusing on its extraction and storage in a raw data format.
-
-Note:
-- The script is a part of an ETL (Extract, Transform, Load) pipeline, primarily focusing on the 'Extract' phase. 
-- As of its current state, the script does not include data transformation or standardisation processes.
-"""
-
-# Import custom constants and utility functions
-from constants import FileDirectory, Daylio
+from constants import Daylio, FileDirectory
+from utility import redis_manager, s3_manager
+from utility.clean_data import CleanData
 from utility.file_manager import FileManager
-from utility.logging import setup_logging  # Custom logging setup
+from utility.log_manager import setup_logging
 
-# Initialise logging
 logger = setup_logging()
 
-#############################################################################################
 
 def daylio_extractor():
     """
-    Load & Standardise Daylio Data
+    Main function to load Daylio data, drop NAs, standarise field names, update cache, save to S3 and local storage.
     """
-    # Initilaise FileManager Class
-    file_manager = FileManager()
+    logger.info("!!!!!!!!!!!! daylio_extractor.py !!!!!!!!!!!")
 
-    # Load youtube HTML file from iCloud
-    daylio_data = file_manager.load_file(FileDirectory.MANUAL_EXPORT_PATH, Daylio.RAW_DATA)
+    try:
+        file_manager = FileManager()
 
-    # Save Data
-    file_manager.save_file(FileDirectory.RAW_DATA_PATH, daylio_data, Daylio.CLEAN_DATA)
+        cached_data = redis_manager.get_cached_data(Daylio.DATA_KEY)
+
+        if cached_data is not None:  # Check cached data exists
+            daylio_df = pd.DataFrame(cached_data)  # Convert to df
+            logger.info(f"Successfully fetched {len(daylio_df)} total entries")
+        else:
+            daylio_df = file_manager.load_file(
+                FileDirectory.SOURCE_DATA_PATH, Daylio.DATA_KEY, "csv"
+            )
+
+            daylio_df = CleanData.clean_data(daylio_df, 5)
+
+            # Cache new data, upload to S3
+            redis_manager.update_cached_data(Daylio.DATA_KEY, daylio_df)
+            s3_manager.post_data_to_s3(Daylio.DATA_KEY, daylio_df, overwrite=True)
+
+        file_manager.save_file(FileDirectory.RAW_DATA_PATH, Daylio.DATA_KEY, daylio_df)
+
+    except Exception as e:
+        logger.error(f"Error occurred in daylio_extractor: {str(e)}")
 
 
 if __name__ == "__main__":

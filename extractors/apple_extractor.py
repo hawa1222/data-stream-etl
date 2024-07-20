@@ -1,92 +1,129 @@
-"""
-This script is designed to extract and standardise data from Apple Health XML files.
-
-Key Processes:
-1. FileManager and DataStandardiser Initialisation:
-   - Initialises FileManager for file operations and DataStandardiser for field standardisation.
-
-2. Data Loading:
-   - Loads the Apple Health XML file using FileManager.
-
-3. XML Parsing:
-   - Extracts the root element of the XML tree for data parsing.
-
-4. Data Extraction and Standardisation:
-   - Iterates over predefined elements of interest (like health records and activity elements).
-   - Converts these elements to pandas DataFrames.
-   - Applies standardisation to these DataFrames using DataStandardiser.
-
-5. Data Filtering and Transformation:
-   - Subsets and simplifies the 'type' field in the health records DataFrame.
-   - Filters the DataFrame based on specific record types.
-
-6. Data Saving:
-   - Saves the processed and filtered data to specified file paths using FileManager.
-
-Usage:
-- Executes as the main module to process Apple Health XML data.
-- Specifically targets the extraction and initial standardisation of data for later stages in a data processing pipeline.
-
-Note:
-- The script is part of a larger ETL process and focuses on extracting and preparing Apple Health data for further analysis.
-"""
-
-# Import Python system libraries
 import pandas as pd
 
-# Import custom constants and utility functions
-from constants import FileDirectory, AppleHealth
+from constants import Apple, FileDirectory
+from utility import redis_manager
+from utility.clean_data import CleanData
 from utility.file_manager import FileManager
-from utility.standardise_fields import DataStandardiser  # Custom data standardisation
-from utility.logging import setup_logging  # Custom logging setup
+from utility.log_manager import setup_logging
 
-# Initialise logging
 logger = setup_logging()
 
-#############################################################################################
+
+def subset_record_by_type(df, type_column="type", max_rows=10000):
+    """
+    Filter dataframe by specific column and sample if number of rows exceeds max_rows.
+
+    Parameters:
+        df: Dataframe to filter.
+        type_column: Column to filter by.
+        max_rows: Maximum number of rows to keep for each unique type.
+
+    Returns:
+        DataFrame: Filtered dataframe.
+    """
+    logger.debug(f"Reducing 'apple_records' data to {max_rows} rows per type...")
+
+    logger.debug(f"Original data has {len(df)} rows")
+
+    result_df = (
+        df.groupby(type_column)
+        .apply(lambda x: x.sample(n=min(len(x), max_rows), random_state=42))
+        .reset_index(drop=True)
+    )
+
+    logger.debug(f"Filtered data has {len(result_df)} rows")
+
+    return result_df
+
+
+def extract_xml_data(root):
+    """
+    Extracts data from Apple Health XML file.
+
+    Parameters:
+        root (Element): Root element of XML file.
+
+    Returns:
+        dict: Dictionary containing the extracted dataframes, where keys are element names and values are corresponding dataframes.
+    """
+    logger.debug("Extracting data from Apple Health XML file...")
+
+    dataframes_dict = {}
+    for element in [Apple.RECORD_ELEMENT, Apple.ACTIVITY_ELEMENT]:
+        elem_data = [elem.attrib for elem in root.iter(element)]
+        if elem_data:
+            logger.info(f"Successfully extracted '{element}' element")
+            df = pd.DataFrame(elem_data)
+            logger.debug(f"Fields in '{element}' dataframe:\n\n{df.columns.tolist()}\n")
+            df_standardised = CleanData.clean_data(df, 4)
+            dataframes_dict[element] = df_standardised
+
+    return dataframes_dict
+
 
 def apple_extractor():
     """
-    Load & Standardise Apple Health Data
+    Main function to load Apple Health XML data, extract and standardise data,
+    update cache, and save to local storage.
     """
-    # Initialise FileManager and DataStandardiser classes
-    file_manager = FileManager()
-    standardiser = DataStandardiser()
-   
-    # Load Apple Health XML file
-    apple_data_tree = file_manager.load_file(AppleHealth.APPLE_XML_PATH, AppleHealth.APPLE_XML_DATA)
+    logger.info("!!!!!!!!!!!! apple_extractor.py !!!!!!!!!!!")
 
-    # Get the root element of the XML tree
-    root = apple_data_tree.getroot()
+    try:
+        file_manager = FileManager()
 
-    # Initialise an empty dictionary to store DataFrames
-    dataframes_dict = {}
+        record_cache = redis_manager.get_cached_data(Apple.RECORD_DATA)
 
-    # Define elements of interest
-    elements_of_interest = [AppleHealth.RECORD, AppleHealth.ACTIVITY_ELEMENT]
+        if record_cache is not None:
+            activity_cache = redis_manager.get_cached_data(Apple.ACTIVITY_DATA)
+            filtered_record_df = pd.DataFrame(record_cache)
+            activity_df = pd.DataFrame(activity_cache)
+            logger.info(
+                f"Successfully fetched {len(filtered_record_df)} & {len(activity_df)} entries from {Apple.RECORD_DATA} & {Apple.ACTIVITY_DATA} cache respectively"
+            )
+        else:
+            tree = file_manager.load_file(FileDirectory.SOURCE_DATA_PATH, Apple.XML_DATA, "xml")
+            root = tree.getroot()
 
-    # Extract and standardise data for each element of interest
-    for element in elements_of_interest:
-        attributes = [elem.attrib for elem in root.iter(element)]
-        # Check if attributes list is empty to avoid creating empty DataFrames
-        if attributes:
-            logger.info(f"Extracted {element} data from Apple Health XML file.")
-            # Convert the list of dictionaries to a DataFrame and store it in the dictionary
-            df = pd.DataFrame(attributes)
-            df_standardised = standardiser.standardise_df(df)
-            dataframes_dict[element] = df_standardised
+            dataframes_dict = extract_xml_data(root)
 
-    # Subset the DataFrame based on 'type' = AppleHealth.RECORD_TYPES
-    record_df = dataframes_dict[AppleHealth.RECORD]
-    # Simplify the 'type' by removing 'Identifier'
-    record_df[AppleHealth.TYPE_FIELD] = record_df[AppleHealth.TYPE_FIELD].str.split('Identifier').str[-1]
-    filtered_record_df = record_df[record_df[AppleHealth.TYPE_FIELD].isin(AppleHealth.RECORD_ELEMENTS)]
+            record_df = dataframes_dict[Apple.RECORD_ELEMENT]
+            activity_df = dataframes_dict[Apple.ACTIVITY_ELEMENT]
 
-    # Save Data
-    file_manager.save_file(FileDirectory.RAW_DATA_PATH, filtered_record_df, AppleHealth.RECORD_DATA)
-    #file_manager.save_file(FileDirectory.RAW_DATA_PATH, df_part2, AppleHealth.RECORD_DATA_2)
-    file_manager.save_file(FileDirectory.RAW_DATA_PATH, dataframes_dict[AppleHealth.ACTIVITY_ELEMENT], AppleHealth.ACTIVITY_DATA)
+            record_df[Apple.TYPE_FIELD] = (
+                record_df[Apple.TYPE_FIELD].str.split("Identifier").str[-1]
+            )  # Keep text after 'Identifier' in 'type' field
+            filtered_record_df = record_df[
+                record_df[Apple.TYPE_FIELD].isin(Apple.RECORD_TYPE)
+            ]  # Filter records by type
+            unique_categories = filtered_record_df["type"].value_counts()
+            type_counts = {category: count for category, count in unique_categories.items()}
+            formatted_type_counts = "\n".join(
+                [f"{category}: {count}" for category, count in type_counts.items()]
+            )
+            logger.debug(f"Unique record types:\n\n{formatted_type_counts}\n")
+
+            # Update cache and save to local storage
+            subset_record_df = subset_record_by_type(filtered_record_df)
+            redis_manager.update_cached_data(Apple.RECORD_DATA, subset_record_df)
+            redis_manager.update_cached_data(Apple.ACTIVITY_DATA, activity_df)
+
+        file_manager.save_file(
+            FileDirectory.RAW_DATA_PATH,
+            Apple.RECORD_DATA,
+            filtered_record_df,
+            extension="csv",
+        )
+
+        file_manager.save_file(
+            FileDirectory.RAW_DATA_PATH,
+            Apple.ACTIVITY_DATA,
+            activity_df,
+            extension="csv",
+        )
+
+    except Exception as e:
+        logger.error(f"Error occurred in apple_extractor: {str(e)}")
+
 
 if __name__ == "__main__":
     apple_extractor()
-

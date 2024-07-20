@@ -13,12 +13,17 @@ __pycache__/
 
 # Environments
 .env
+.env_dev
+.env_prod
 .venv
 env/
 venv/
 ENV/
 venv/
 etlenv/
+.env*
+
+
 
 # IDEs
 .idea/
@@ -34,7 +39,19 @@ setup_cron.sh
 /credentials/
 /data/
 /logs/
-/documentation/*
+/utility/data_setup/
+/airflow/config/
 
-# But not these files:
+/documentation/*
 !/documentation/SQL Schema.xlsx
+
+/tests/api_call.ipynb
+
+/exploratory_analysis/*
+!/exploratory_analysis/apple_record_extractor.py
+!/exploratory_analysis/apple_xml_explorer.ipynb
+!/exploratory_analysis/error_handling.ipynb
+!/exploratory_analysis/youtube_api_explorer.ipynb
+!/exploratory_analysis/youtube_html_explorer.ipynb
+
+

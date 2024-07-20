@@ -1,71 +1,79 @@
-# Import the required libraries
-import mysql.connector
-from mysql.connector import Error
-import pandas as pd
+"""
+Script to handle database operations such as connecting to a MySQL database,
+creating and dropping tables, and inserting data.
+"""
+
 import sys
 
-# Custom imports
-from utility.logging import setup_logging
+import mysql.connector
+import pandas as pd
+from mysql.connector import Error
 
-# Initialise logging
+from utility.log_manager import setup_logging
+
 logger = setup_logging()
 
-##################################################################################################################################
 
 class DatabaseHandler:
     """
-    Class for handling database operations such as connecting to a MySQL database, 
-    creating and dropping tables, and inserting data. It's designed to be flexible 
+    Class for handling database operations such as connecting to a MySQL database,
+    creating and dropping tables, and inserting data. It's designed to be flexible
     for various database operations.
-    
+
     Attributes:
-    host (str): The database server host.
-    port (int): The port number to use for the connection.
-    user (str): The username used to authenticate with the database.
-    password (str): The password used to authenticate with the database.
-    db_name (str): The name of the database to use.
-    connection (mysql.connector.connection_cext.CMySQLConnection): The connection object to the database.
+        host (str): The database server host.
+        port (int): The port number to use for the connection.
+        user (str): The username used to authenticate with the database.
+        password (str): The password used to authenticate with the database.
+        db_name (str): The name of the database to use.
+        connection (mysql.connector.connection_cext.CMySQLConnection): The connection object to the database.
     """
 
     def __init__(self, host, port, user, password, db_name):
         """
         Initialises the DatabaseHandler instance with the provided database credentials.
-        
+
         Parameters:
-        host (str): The database server host.
-        port (int): The port number for the database server.
-        user (str): The username for the database.
-        password (str): The password for the database.
-        db_name (str): The name of the database.
+            host (str): The database server host.
+            port (int): The port number for the database server.
+            user (str): The username for the database.
+            password (str): The password for the database.
+            db_name (str): The name of the database.
         """
         self.host = host  # Database server host
         self.port = port  # Port number for the database server
         self.user = user  # Username for database access
         self.password = password  # Password for database access
         self.db_name = db_name  # Name of the database
-        
+
         self.connection = self.connect()  # Establish database connection
 
     def connect(self):
         """
         Connects to the MySQL database using the stored credentials and sets the time zone to UTC.
-    
+
         Returns:
-        Connection object if successful; otherwise, the script exits.
-    
+            Connection object if successful; otherwise, the script exits.
+
         Raises:
-        SystemExit: If connection to the database fails.
+            SystemExit: If connection to the database fails.
         """
         try:
             # Attempt to create a database connection
             conn = mysql.connector.connect(
-                host=self.host, port=self.port, user=self.user, password=self.password, database=self.db_name)
-    
+                host=self.host,
+                port=self.port,
+                user=self.user,
+                password=self.password,
+                database=self.db_name,
+            )
+
             # Create a cursor and set the time zone to UTC
             cursor = conn.cursor()
             cursor.execute("SET time_zone = '+00:00';")
+            cursor.execute("SET SESSION sql_mode = '';")
             cursor.close()
-    
+
             logger.info("Successfully connected to the database and set time zone to UTC")
             return conn
         except Error as e:
@@ -77,71 +85,91 @@ class DatabaseHandler:
         """
         Creates a table in the database if it doesn't already exist. This method expects all field definitions,
         including primary keys and foreign keys, to be included directly within the field definitions in the 'fields' dictionary.
-    
+
         Parameters:
-        table_name (str): Name of the table to create.
-        fields (dict): Dictionary of field names with their SQL data types and constraints, including primary and foreign keys.
+            table_name (str): Name of the table to create.
+            fields (dict): Dictionary of field names with their SQL data types and constraints, including primary and foreign keys.
         """
         if self.connection.is_connected():
             with self.connection.cursor() as cursor:  # Managing the cursor using 'with' statement for automatic cleanup
                 try:
                     # Execute a SQL query to check if the table already exists
-                    cursor.execute(f"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '{self.connection.database}' AND table_name = '{table_name}'")
+                    cursor.execute(
+                        f"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '{self.connection.database}' AND table_name = '{table_name}'"
+                    )
                     if cursor.fetchone()[0] == 1:  # Check if the table exists
                         logger.info(f"Table '{table_name}' already exists")  # Log if table exists
                     else:
                         # Generate the SQL query for creating the table
                         create_table_query = self.generate_create_table_query(table_name, fields)
-                        #logger.info(f"Generated SQL for table creation: {create_table_query}")  # Log the SQL command for debugging
-                        cursor.execute(create_table_query)  # Execute the SQL command to create the table
-                        logger.info(f"Table '{table_name}' created successfully")  # Log successful table creation
-    
+                        # logger.info(f"Generated SQL for table creation: {create_table_query}")  # Log the SQL command for debugging
+                        cursor.execute(
+                            create_table_query
+                        )  # Execute the SQL command to create the table
+                        logger.info(
+                            f"Table '{table_name}' created successfully"
+                        )  # Log successful table creation
+
                         # Log the details of any foreign keys defined within the column definitions
                         for field, definition in fields.items():
-                            if 'FOREIGN KEY' in definition:
+                            if "FOREIGN KEY" in definition:
                                 # Extract and log the foreign key details from the column definition
-                                fk_detail = definition.split('FOREIGN KEY')[1].strip()
-                                logger.info(f"Foreign key defined '{field}' for table '{table_name}': {fk_detail}")
-    
+                                fk_detail = definition.split("FOREIGN KEY")[1].strip()
+                                logger.debug(
+                                    f"Foreign key defined '{field}' for table '{table_name}': {fk_detail}"
+                                )
+
                 except mysql.connector.ProgrammingError as pe:
-                    logger.error(f"Programming Error during table creation: {pe}")  # Log programming errors
+                    logger.error(
+                        f"Programming Error during table creation: {pe}"
+                    )  # Log programming errors
                 except mysql.connector.IntegrityError as ie:
-                    logger.error(f"Integrity Error during table creation: {ie}")  # Log integrity errors
+                    logger.error(
+                        f"Integrity Error during table creation: {ie}"
+                    )  # Log integrity errors
                 except Error as e:
-                    logger.error(f"General Error during table creation: {e}")  # Log any other errors
-    
+                    logger.error(
+                        f"General Error during table creation: {e}"
+                    )  # Log any other errors
+
     def generate_create_table_query(self, table_name, fields):
         """
         Generates a SQL query to create a table, including fields and any inline primary or foreign key definitions.
-    
+
         Parameters:
-        table_name (str): Name of the table.
-        fields (dict): Field names with their SQL data types and constraints, including primary and foreign keys.
-    
+            table_name (str): Name of the table.
+            fields (dict): Field names with their SQL data types and constraints, including primary and foreign keys.
+
         Returns:
-        str: A SQL query string for creating the specified table.
+            str: A SQL query string for creating the specified table.
         """
         # Combine field definitions into a string
-        field_definitions = ', '.join([f"{field} {definition}" for field, definition in fields.items()])
-    
+        field_definitions = ", ".join(
+            [f"{field} {definition}" for field, definition in fields.items()]
+        )
+
         # Construct the complete CREATE TABLE SQL query
-        create_table_query = f"CREATE TABLE IF NOT EXISTS {table_name} ({field_definitions}) ENGINE=InnoDB;"
-    
+        create_table_query = (
+            f"CREATE TABLE IF NOT EXISTS {table_name} ({field_definitions}) ENGINE=InnoDB;"
+        )
+
         # Return the complete SQL query
         return create_table_query
 
     def drop_table(self, table_name):
         """
         Drops (deletes) a table from the database if it exists.
-    
+
         Parameters:
-        table_name (str): Name of the table to be dropped.
+            table_name (str): Name of the table to be dropped.
         """
         if self.connection.is_connected():
             with self.connection.cursor() as cursor:
                 try:
                     # First, check if the table exists
-                    cursor.execute(f"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '{self.connection.database}' AND table_name = '{table_name}'")
+                    cursor.execute(
+                        f"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '{self.connection.database}' AND table_name = '{table_name}'"
+                    )
                     if cursor.fetchone()[0] == 0:
                         logger.info(f"Table '{table_name}' does not exist, no action taken.")
                     else:
@@ -155,11 +183,11 @@ class DatabaseHandler:
     def insert_data(self, table_name, data_frame, column_mapping):
         """
         Inserts data into the specified table from a pandas DataFrame.
-    
+
         Parameters:
-        table_name (str): Name of the table where data will be inserted.
-        data_frame (pandas.DataFrame): DataFrame containing the data to insert.
-        column_mapping (list): List of DataFrame column names corresponding to table fields.
+            table_name (str): Name of the table where data will be inserted.
+            data_frame (pandas.DataFrame): DataFrame containing the data to insert.
+            column_mapping (list): List of DataFrame column names corresponding to table fields.
         """
         # Check if the connection to the database is active
         if self.connection.is_connected():
@@ -167,31 +195,38 @@ class DatabaseHandler:
                 # Use 'with' statement for resource management of the cursor
                 with self.connection.cursor() as cursor:
                     # Check if the table exists before attempting to insert data
-                    cursor.execute(f"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '{self.connection.database}' AND table_name = '{table_name}'")
+                    cursor.execute(
+                        f"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '{self.connection.database}' AND table_name = '{table_name}'"
+                    )
                     if cursor.fetchone()[0] == 0:
-                        logger.error(f"Failed to insert data: Table '{table_name}' does not exist.")
+                        logger.error(
+                            f"Failed to insert data: Table '{table_name}' does not exist."
+                        )
                         return  # Exit the function as the table doesn't exist
                     # Initialise counters for added and updated records
                     added_count = 0
                     updated_count = 0
-    
+
                     # Generate the SQL query for data insertion
                     insert_query = self.generate_insert_query(table_name, column_mapping)
-    
+
                     # Iterate over each row in the DataFrame
                     for i, row in data_frame.iterrows():
                         # Prepare a tuple of data for insertion, handling null values
-                        data_tuple = tuple(row[column] if pd.notna(row[column]) else None for column in column_mapping)
+                        data_tuple = tuple(
+                            row[column] if pd.notna(row[column]) else None
+                            for column in column_mapping
+                        )
                         try:
                             # Execute the insert query with the prepared data tuple
                             cursor.execute(insert_query, data_tuple)
-    
+
                             # Check the number of affected rows to determine if the row was added or updated
                             if cursor.rowcount == 1:
                                 added_count += 1  # Increment added count for a new row
                             elif cursor.rowcount == 2:
                                 updated_count += 1  # Increment updated count for an existing row
-    
+
                             # Commit the transaction to save changes
                             self.connection.commit()
                         except Error as e:
@@ -199,10 +234,14 @@ class DatabaseHandler:
                             logger.error("Error on insert at index %d: %s", i, e)
                             # Rollback the transaction to revert changes since the last commit
                             self.connection.rollback()
-    
+
                     # Log the number of records added and updated after completing the insertion process
-                    logger.info(f"Data insertion process completed for table '{table_name}': %d records added, %d records updated", added_count, updated_count)
-                    
+                    logger.info(
+                        f"Data insertion process completed for table '{table_name}': %d records added, %d records updated",
+                        added_count,
+                        updated_count,
+                    )
+
             except Error as e:
                 # Log any error that occurs during the database operation outside the row insertion
                 logger.error("Error during data insertion into table '%s': %s", table_name, e)
@@ -210,41 +249,43 @@ class DatabaseHandler:
                 self.connection.rollback()
 
     def generate_insert_query(self, table_name, column_mapping):
-    
         """
         Generates a SQL query for inserting data into a table.
 
         Parameters:
-        table_name (str): Name of the table.
-        column_mapping (list): List of column names for the INSERT query.
+            table_name (str): Name of the table.
+            column_mapping (list): List of column names for the INSERT query.
 
         Returns:
-        str: A SQL query string for inserting data.
+            str: A SQL query string for inserting data.
         """
         # Construct the column names and placeholders for the INSERT query
-        columns = ', '.join(column_mapping)
-        values_placeholders = ', '.join(['%s'] * len(column_mapping))
-        
+        columns = ", ".join(column_mapping)
+        values_placeholders = ", ".join(["%s"] * len(column_mapping))
+
         # Construct the ON DUPLICATE KEY UPDATE clause
-        update_clause = ', '.join([f"{col} = VALUES({col})" for col in column_mapping])
-        
+        update_clause = ", ".join([f"{col} = VALUES({col})" for col in column_mapping])
+
         # Return the complete INSERT INTO SQL query
-        return f'''
+        return f"""
         INSERT INTO {table_name} ({columns})
         VALUES ({values_placeholders})
         ON DUPLICATE KEY UPDATE
         {update_clause}
-        '''
-    
+        """
+
     def fetch_data(self, tables):
         """
         Fetches data from the database for the given table(s) and returns it as a dictionary of Pandas DataFrames.
 
-        :param tables: A single table name or a list of table names to fetch.
-        :return: Dictionary of DataFrames with each table's data.
+        Parameters:
+            tables: A single table name or a list of table names to fetch.
+
+        Returns:
+            dict: A dictionary of DataFrames with each table's data.
         """
         dataframes = {}
-        
+
         # Ensure tables is a list even if a single table name is provided
         if isinstance(tables, str):
             tables = [tables]
@@ -262,7 +303,7 @@ class DatabaseHandler:
                 dataframes[table] = pd.DataFrame()  # Return an empty DataFrame on error
 
         return dataframes
-        
+
     def close_connection(self):
         """
         Closes the database connection if it is open.
@@ -280,9 +321,3 @@ class DatabaseHandler:
         else:
             # If the connection is already closed, log this information
             logger.info("Database connection is already closed.")
-
-
-
-
-
-
