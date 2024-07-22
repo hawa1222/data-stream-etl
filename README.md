@@ -6,7 +6,7 @@ This repository contains a Python based ETL pipeline to centralise data from mul
 
 - Establish a comprehensive personal data repository, laying the foundation for developing personalised applications and dashboards with the ability to query historical data.
 - Utilise a range of technologies such as Python, MySQL, API integration, HTML scraping, Redis, S3, and Airflow.
-- Implement diverse data extraction techniques such as API calls, HTML scraping, and manual exports
+- Implement diverse data extraction techniques such as API calls, HTML scraping, and manual exports.
 - Design physical data models to store data in a structured format.
 - Integrate data from various formats including CSV, JSON, XML into distinct MySQL tables.
 - Develop a modular pipeline for scalable data integration and transformation.
