@@ -4,6 +4,7 @@ Script to set up logging configuration.
 
 import logging
 import os
+
 from logging.handlers import RotatingFileHandler
 
 from config import Settings
@@ -43,8 +44,7 @@ def setup_logging():
         )
     else:
         formatter = logging.Formatter(
-            "[%(asctime)s] [%(levelname)s] %(message)s",
-            datefmt=Settings.DATETIME_FORMAT + " %z",
+            "[%(asctime)s] [%(levelname)s] %(message)s", datefmt=Settings.DATETIME_FORMAT + " %z"
         )
 
     # Create console handler

@@ -3,6 +3,7 @@ Script to connect to Redis and manage caching of data.
 """
 
 import json
+
 from datetime import datetime, timedelta
 
 import pandas as pd
@@ -96,7 +97,7 @@ class JSONEncoder(json.JSONEncoder):
     """
 
     def default(self, obj):
-        if isinstance(obj, (datetime, pd.Timestamp)):
+        if isinstance(obj, datetime | pd.Timestamp):
             return obj.isoformat()  # Convert datetime to string
         return json.JSONEncoder.default(self, obj)
 
@@ -115,9 +116,7 @@ def update_cached_data(cache_key, data):
 
         cache_data = {"timestamp": datetime.now().isoformat(), "data": data}
         redis_client.setex(
-            cache_key,
-            timedelta(hours=48),
-            json.dumps(cache_data, cls=JSONEncoder, indent=2),
+            cache_key, timedelta(hours=48), json.dumps(cache_data, cls=JSONEncoder, indent=2)
         )
         logger.info(f"Succesfully updated '{cache_key}' cache, {len(data)} total entries")
 

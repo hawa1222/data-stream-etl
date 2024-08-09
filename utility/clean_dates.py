@@ -3,8 +3,8 @@ Script to clean and standardise date strings.
 """
 
 import re
-from datetime import datetime
 
+from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from utility.log_manager import setup_logging
@@ -79,9 +79,7 @@ def parse_date(date_string):
             total_offset = offset_hours * 60 + offset_minutes
             if tz_offset.startswith("-"):
                 total_offset = -total_offset
-            tz = ZoneInfo(
-                f"Etc/GMT{'-' if total_offset >= 0 else '+'}{abs(total_offset) // 60}"
-            )
+            tz = ZoneInfo(f"Etc/GMT{'-' if total_offset >= 0 else '+'}{abs(total_offset) // 60}")
 
             # Apply timezone and convert to UTC
             dt = dt.replace(tzinfo=tz)
