@@ -5,9 +5,11 @@ Script to load and save files in different formats, and update Excel files with 
 import json
 import os
 import warnings
-import xml.etree.ElementTree as ET
+
+from xml.etree import ElementTree
 
 import pandas as pd
+
 from bs4 import BeautifulSoup
 
 from utility.log_manager import setup_logging
@@ -53,12 +55,12 @@ class FileManager:
             elif extension in ["xls", "xlsx", "xlsm"]:
                 data = pd.read_excel(full_path, engine="openpyxl", **kwargs)
             elif extension == "json":
-                with open(full_path, "r") as f:
+                with open(full_path) as f:
                     data = json.load(f)
             elif extension == "xml":
-                data = ET.parse(full_path)
+                data = ElementTree.parse(full_path)
             elif extension == "html":
-                with open(full_path, "r", encoding="utf-8") as f:
+                with open(full_path, encoding="utf-8") as f:
                     data = BeautifulSoup(f, "lxml")
             else:
                 logger.error(f"Unsupported file format: {extension}")
@@ -136,7 +138,8 @@ def update_excel(file_directory, file_name, new_data):
         if os.path.exists(local_data_path):
             existing_data = file_manager.load_file(file_directory, file_name)
             logger.debug(
-                f"Local copy loaded. Existing data shape: {existing_data.shape}, New data shape: {new_data.shape}"
+                f"Local copy loaded. Existing data shape: {existing_data.shape}, "
+                f"New data shape: {new_data.shape}"
             )
         else:
             existing_data = pd.DataFrame()

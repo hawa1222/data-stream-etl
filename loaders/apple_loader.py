@@ -101,9 +101,7 @@ def apple_loader():
         for name, fields in field_structures.items():
             db_handler.create_table(name, fields)
 
-            column_names = [
-                field for field in fields if not field.startswith("PRIMARY KEY")
-            ]
+            column_names = [field for field in fields if not field.startswith("PRIMARY KEY")]
 
             db_handler.insert_data(name, dataframes[name], column_names)
 

@@ -30,7 +30,8 @@ def strava_loader():
                 "map_polyline": "TEXT",
             },
             Strava.PERFORMANCE_DATA: {
-                "activity_id": f"BIGINT UNSIGNED NOT NULL PRIMARY KEY, FOREIGN KEY (activity_id) REFERENCES {Strava.ACTIVITY_DATA}(activity_id)",
+                "activity_id": f"BIGINT UNSIGNED NOT NULL PRIMARY KEY, "
+                f"FOREIGN KEY (activity_id) REFERENCES {Strava.ACTIVITY_DATA}(activity_id)",
                 "distance": "DECIMAL(6,1)",
                 "moving_time": "DECIMAL(5,2)",
                 "elapsed_time": "DECIMAL(5,2)",

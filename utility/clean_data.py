@@ -37,7 +37,7 @@ class CleanData:
 
         return col.lower(), original_col != col.lower()
 
-    def clean_data(df, na_threshold=None):
+    def clean_data(self, df, na_threshold=None):
         """
         Drop NaN rows and standardise column names, with tracking changes
 
@@ -82,9 +82,8 @@ def round_floats(df):
         for column in df.select_dtypes(include=["float64"]).columns:
             df[column] = df[column].round(2)
 
-        logger.debug(
-            f"Successfully rounded {len(df.select_dtypes(include=['float64']).columns)} float columns to 2 Decimal Places"
-        )
+        rounded_columns = len(df.select_dtypes(include=["float64"]).columns)
+        logger.debug(f"Successfully rounded {rounded_columns} float columns to 2 Decimal Places")
 
         return df
 
