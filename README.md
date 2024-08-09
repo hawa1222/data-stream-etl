@@ -28,7 +28,7 @@ This repository contains a Python based ETL pipeline to centralise data from mul
 - **Extractors**: Modules to retrieve data from various sources, including Redis for caching and S3 as a data lake.
 - **Transformers**: Modules to clean, standardise, and manipulate data format.
 - **Loader**: Modules responsible for inserting data into MySQL database.
-- **Utility**: Contains helper functions and classes for database interactions (`DatabaseHandler`) and file management (`FileManager`).
+- **Utility**: Modules containing helper functions and classes for database interactions (`DatabaseHandler`), file management (`FileManager`), logging (`setup_logging`), and more.
 - **Validation**: Script for post-load data validation to ensure data integrity and consistency.
 
 ### Data Flow Diagram
