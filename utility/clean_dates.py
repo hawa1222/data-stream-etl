@@ -3,8 +3,8 @@ Script to clean and standardise date strings.
 """
 
 import re
-
 from datetime import datetime
+
 from zoneinfo import ZoneInfo
 
 from utility.log_manager import setup_logging
@@ -79,7 +79,9 @@ def parse_date(date_string):
             total_offset = offset_hours * 60 + offset_minutes
             if tz_offset.startswith("-"):
                 total_offset = -total_offset
-            tz = ZoneInfo(f"Etc/GMT{'-' if total_offset >= 0 else '+'}{abs(total_offset) // 60}")
+            tz = ZoneInfo(
+                f"Etc/GMT{'-' if total_offset >= 0 else '+'}{abs(total_offset) // 60}"
+            )
 
             # Apply timezone and convert to UTC
             dt = dt.replace(tzinfo=tz)
@@ -91,3 +93,82 @@ def parse_date(date_string):
             continue
 
     raise ValueError(f"Unable to parse datetime string: {date_string}")
+
+
+####################################################################################################
+
+import logging
+
+import pandas as pd
+
+
+def parse_date(date_string, output_format="%Y-%m-%d %H:%M:%S"):
+    """
+    Parses date string and converts it to specified format (default: UTC format).
+
+    Parameters:
+    - date_string (str): Date string to be parsed.
+    - output_format (str): The desired format of output date string (default: '%Y-%m-%d %H:%M:%S').
+
+    Returns:
+    - str: Parsed date string in specified output format.
+
+    Raises:
+    - ValueError: If date string cannot be parsed.
+
+    Logic:
+    1. Handles None, NaN, and other non-date values by returning None.
+    2. Strips leading and trailing spaces from date string.
+    3. Defines possible date formats (without timezone info).
+    4. Tries parsing date string with each format.
+    5. Returns parsed date string in specified format.
+    6. If no format matches, returns None to gracefully handle unknown formats.
+    """
+
+    if pd.isna(date_string) or date_string is None:
+        return None
+
+    date_string = str(date_string).strip()
+
+    # Define your date formats (assumed from your code as 'Migration.SOURCE_DATETIME_FMTS')
+    possible_formats = [
+        "%Y-%m-%dT%H:%M:%S",  # Add other formats you expect
+        "%Y-%m-%d %H:%M:%S",
+        "%d-%b-%y",  # Example: '22-Oct-84'
+        "%Y/%m/%d",
+        "%d/%m/%Y",
+    ]
+
+    for fmt in possible_formats:
+        try:
+            dt = datetime.strptime(date_string, fmt)
+            return dt.strftime(output_format)
+        except ValueError:
+            continue
+
+    # If no valid format is found, return None
+    logging.warning(f"Unable to parse datetime string: {date_string}")
+    return None
+
+
+def standardise_dates(df, date_fields, output_format="%Y-%m-%d %H:%M:%S"):
+    """
+    Standardises date fields in a dataframe by applying the `parse_date` function to each specified field.
+
+    Parameters:
+    - df (pd.DataFrame): The dataframe containing the date fields.
+    - date_fields (list): List of columns in the dataframe that contain date values.
+    - output_format (str): The format to convert the dates to (default: '%Y-%m-%d %H:%M:%S').
+
+    Returns:
+    - pd.DataFrame: The dataframe with the standardised date fields.
+    """
+
+    logging.info(f"Standardising date fields {date_fields}...")
+
+    for col in date_fields:
+        logging.info(f"Sample before cleaning: {col} -- {df[col].head(2).to_list()}")
+        df[col] = df[col].astype(str).apply(lambda x: parse_date(x, output_format))
+        logging.info(f"Sample after cleaning: {col} -- {df[col].head(2).to_list()}")
+
+    return df
